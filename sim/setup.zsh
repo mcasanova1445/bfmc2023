@@ -1,8 +1,8 @@
 #!/usr/bin/env zsh
 # generated from catkin/cmake/templates/setup.zsh.in
 
-export GAZEBO_MODEL_PATH="/Users/mc/dox/bosch/bfmc_2022/Simulator/src/models_pkg:$GAZEBO_MODEL_PATH"
-export ROS_PACKAGE_PATH="/Users/mc/dox/bosch/bfmc_2022/Simulator/src:$ROS_PACKAGE_PATH"
+export GAZEBO_MODEL_PATH="/Users/mc/dox/bosch/bfmc2023/sim/src/models_pkg:$GAZEBO_MODEL_PATH"
+export ROS_PACKAGE_PATH="/Users/mc/dox/bosch/bfmc2023/sim/src:$ROS_PACKAGE_PATH"
 
 CATKIN_SHELL=zsh
 
