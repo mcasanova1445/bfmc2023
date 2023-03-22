@@ -1,0 +1,45 @@
+* TODO
+
+** Understand the code of the brain                                             :Miguel:Tomasso:
+
+*** main_brain.py                                                               :Miguel:
+
+*** brain.py                                                                    :Tomasso:
+
+**** PathPlanning4.py                                                           :~:
+
+**** detection.py                                                               :~:
+
+** Correct the routing in function of the movement direction                    :Marco:
+
+*** Average the GPS signal before starting to move
+
+** If we can do traffic sign recognition, it would be nice, but not a priority  :~:
+
+*** Template benching                                                           :Matteo:
+
+** Obstacle recognition (Pedestrian, car, roadblock)                            :Sari:Mohamed:Matteo:
+
+** Training the CNN for intersection and roundabout navigation                  :Mohamed:Miguel:
+
+** Check why we set the camera driver at 1640x1232 but then caputure at 320x240
+
+** GIT                                                                          :Miguel:
+
+** Move IMU away from the motor                                                 :Marco:
+
+* Weekly meetings: Tuesday 09h00
+
+* PRIORITY: CNN
+
+* First resolution to try for obstacle detection: 160x120
+
+* Tell Bosch that Bruschetta will be there only from the 3rd to the 7th
+
+* From last year
+
+- yaw checking
+- stopline detetcion retrain (in progress)
+- measure delay and freq of gps
+- pedestrian on crosswalk with gps
+- add yolo for classification

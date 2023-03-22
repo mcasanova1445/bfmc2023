@@ -1,0 +1,12 @@
+#casadi
+cv_bridge
+genpy
+matplotlib
+networkx
+numpy
+opencv_contrib_python
+pyclothoids
+pynput
+rospy
+scipy
+sensor_msgs
