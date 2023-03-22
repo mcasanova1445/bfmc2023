@@ -241,7 +241,7 @@ class Brain:
         #self.car = Automobile_Data() #not needed, just to import he methods in visual studio
         self.car = car
         assert isinstance(self.car, Automobile_Data)
-        self.controller = Controller(training=True) #again, not needed
+        self.controller = Controller(training=False) #again, not needed
         self.controller = controller
         self.controller_sp = ControllerSpeed() #again, not needed
         self.controller_sp = controller_sp
