@@ -24,7 +24,7 @@
 
 ** Check why we set the camera driver at 1640x1232 but then caputure at 320x240
 
-** GIT                                                                          :Miguel:
+** Setting the default value of car.trust_gps to false breaks the brain         :Miguel:
 
 ** Move IMU away from the motor                                                 :Marco:
 

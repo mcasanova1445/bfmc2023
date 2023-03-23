@@ -20,14 +20,14 @@ from environmental_data_simulator import EnvironmentalData
 
 import helper_functions as hf
 
-SHOW_IMGS = True
-# SHOW_IMGS = False
+SHOW_IMGS = False
 
 END_NODE = 85
 # CHECKPOINTS = [299,275] #roundabout
 # CHECKPOINTS = [86,99,116] #left right left right
 # complete track#[86,430,193,141,346,85] #complete track
-CHECKPOINTS = [86, 255, 110, 346, END_NODE]
+CHECKPOINTS = [86, 430, 193, 141, 346, 85]  # complete track
+# CHECKPOINTS = [86, 255, 110, 346, END_NODE]
 # CHECKPOINTS = [86,235,END_NODE]
 SPEED_CHALLENGE = False
 
@@ -120,7 +120,7 @@ CONDITIONS = {
         # in expecting a sign or traffic light
         # can be set as false if there is a lot of
         # package loss or the car has not received signal in a while
-        nac.TRUST_GPS:    False,
+        nac.TRUST_GPS:    True,
         # if true, the car is on the path, if the gps is trusted
         # and the position is too far from the path it will be set to false
         nac.CAR_ON_PATH:  True,
@@ -338,7 +338,7 @@ class Brain:
         if checkpoints is not None:
             self.checkpoints = checkpoints
         else:
-            CHECKPOINTS
+            self.checkpoints = CHECKPOINTS
         self.checkpoint_idx = 0
         self.desired_speed = desired_speed
         self.parking_method = DEFAULT_PARKING_METHOD
@@ -479,12 +479,12 @@ class Brain:
             closest_node, distance = self.path_planner.get_closest_node(
                     curr_pos)
             print(f'GPS converged, starting from node: {closest_node}, \
-                    distance: {distance:.2f}')
+distance: {distance:.2f}')
             # sleep(3.0)
             self.checkpoints[self.checkpoint_idx] = closest_node
             if distance > 0.8:
                 self.error('ERROR: REROUTING: GPS converged, but distance is \
-                        too large, we are too far from the lane')
+too large, we are too far from the lane')
             can_generate_route = True
         else:
             start_time = self.curr_state.var2
@@ -492,7 +492,7 @@ class Brain:
                     {(curr_time-start_time):.1f}/{GPS_TIMEOUT}')
             if curr_time - start_time > GPS_TIMEOUT:
                 print('WARNING: ROUTE_GENERATION: No gps signal, \
-                        Starting from the first checkpoint')
+Starting from the first checkpoint')
                 sleep(3.0)
                 can_generate_route = True
 
@@ -582,10 +582,10 @@ class Brain:
                 diff = self.next_event.dist - self.car_dist_on_path
                 if 0.0+0.1 < diff:
                     print(f'Driving toward highway exit: exiting in \
-                            {diff:.2f} [m]')
+{diff:.2f} [m]')
                 elif -0.05 < diff <= 0.0+0.1:
                     print('Arrived at highway exit, switching to going \
-                            straight for exiting')
+straight for exiting')
                     self.switch_to_state(nac.GOING_STRAIGHT)
                 else:
                     self.error('ERROR: LANE FOLLOWING: Missed Highway exit')
@@ -605,7 +605,7 @@ class Brain:
                         self.car_dist_on_path
                 if dist_to_end > END_STATE_DISTANCE_THRESHOLD:
                     print(f'Driving toward end: exiting in \
-                            {dist_to_end:.2f} [m]')
+{dist_to_end:.2f} [m]')
                 elif -END_STATE_DISTANCE_THRESHOLD < dist_to_end <= \
                         END_STATE_DISTANCE_THRESHOLD:
                     print('Arrived at end, switching to end state')
@@ -621,14 +621,13 @@ class Brain:
                 if GPS_STOPLINE_APPROACH_DISTANCE <= dist_to_stopline:
                     print(
                         f'Stopline is far: \
-                        {dist_to_stopline-GPS_STOPLINE_APPROACH_DISTANCE:.2f} \
-                        [m]')
+{dist_to_stopline-GPS_STOPLINE_APPROACH_DISTANCE:.2f} [m]')
                 if 0.0 < dist_to_stopline < GPS_STOPLINE_APPROACH_DISTANCE:
                     print('Switching to approaching stopline')
                     self.switch_to_state(nac.APPROACHING_STOP_LINE)
                 else:
                     print('It seems we passed the stopline, or path \
-                            self intersected.')
+self intersected.')
             else:
                 far_enough_from_prev_stop_line = (self.event_idx == 1) or \
                         (self.car.dist_loc > STOP_LINE_DISTANCE_THRESHOLD)
@@ -660,14 +659,14 @@ class Brain:
             elif GPS_STOPLINE_STOP_DISTANCE <= dist_to_stopline < \
                     GPS_STOPLINE_APPROACH_DISTANCE:
                 print(f'Approaching stop line: \
-                        {dist_to_stopline-GPS_STOPLINE_STOP_DISTANCE:.2f} [m]')
+{dist_to_stopline-GPS_STOPLINE_STOP_DISTANCE:.2f} [m]')
                 decide_next_state = False
             elif 0.0 <= dist_to_stopline < GPS_STOPLINE_STOP_DISTANCE:
                 print('Arrived at stop line')
                 decide_next_state = True
             else:
                 self.error(f'ERROR: APPROACHING STOP LINE: Missed stop line, \
-                        dist: {dist_to_stopline}')
+dist: {dist_to_stopline}')
         else:
             dist = self.detect.est_dist_to_stop_line
             # #check if we are here by mistake
@@ -685,9 +684,9 @@ class Brain:
                 self.car.drive_distance(dist_to_drive)
                 if dist_to_drive < STOP_LINE_STOP_DISTANCE:
                     print(f'Arrievd at stop line. Using median distance: \
-                            {self.stop_line_distance_median}')
+{self.stop_line_distance_median}')
                     print(f'                           encoder distance: \
-                            { self.car.encoder_distance:.2f}')
+{ self.car.encoder_distance:.2f}')
                     # sleep(1.0)
                     decide_next_state = True
                 else:
@@ -696,7 +695,7 @@ class Brain:
             # (possibly inaccurate) network estimaiton
             else:
                 print('WARNING: APPROACHING_STOP_LINE: stop distance may \
-                        be imprecise')
+be imprecise')
                 if dist < STOP_LINE_STOP_DISTANCE:
                     print('Stopped at stop line. Using network distance: ',
                           self.detect.est_dist_to_stop_line)
@@ -733,13 +732,13 @@ class Brain:
             # Events without stopline = LOGIC ERROR
             elif next_event_name == nac.PARKING_EVENT:
                 self.error('WARNING: UNEXPECTED STOP LINE FOUND WITH \
-                        PARKING AS NEXT EVENT')
+PARKING AS NEXT EVENT')
             elif next_event_name == nac.HIGHWAY_EXIT_EVENT:
                 self.error('WARNING: UNEXPECTED STOP LINE FOUND WITH \
-                        HIGHWAY EXIT AS NEXT EVENT')
+HIGHWAY EXIT AS NEXT EVENT')
             else:
                 self.error('ERROR: UNEXPECTED STOP LINE FOUND WITH \
-                        UNKNOWN EVENT AS NEXT EVENT')
+UNKNOWN EVENT AS NEXT EVENT')
             self.activate_routines([])  # deactivate all routines
 
     def intersection_navigation(self):
@@ -809,7 +808,7 @@ class Brain:
                 if USE_ADVANCED_NETWORK_FOR_STOPLINES:
                     stopline_x, stopline_y, stopline_angle = \
                             self.detect.detect_stop_line2(self.car.frame,
-                                                          show_ROI=True)
+                                                          show_ROI=SHOW_IMGS)
                     e2 = stopline_y
                 else:
                     self.detect.detect_stop_line(self.car.frame, SHOW_IMGS)
@@ -824,7 +823,7 @@ class Brain:
                 # we do not have an accurate position for the stopline
                 else:
                     print('We DONT have the median, using \
-                            simple net estimation')
+simple net estimation')
                     print(len(self.routines[nac.DETECT_STOP_LINE].var2))
                     if self.detect.est_dist_to_stop_line < \
                             STOP_LINE_APPROACH_DISTANCE:
@@ -856,7 +855,7 @@ class Brain:
                     print(f'yaw = {np.rad2deg(self.car.yaw):.2f}')
                     print(
                         f'est yaw = \
-                        {np.rad2deg(self.next_event.yaw_stopline + alpha):.2f}'
+{np.rad2deg(self.next_event.yaw_stopline + alpha):.2f}'
                         )
                     diff = hf.diff_angle(self.next_event.yaw_stopline + alpha,
                                          self.car.yaw)
@@ -864,7 +863,7 @@ class Brain:
                     self.car.yaw += diff
             assert abs(alpha) < np.pi/6, \
                 f'Car orientation wrt stopline is too big, it needs to be \
-                better aligned, alpha = {alpha}'
+better aligned, alpha = {alpha}'
             rot_matrix = np.array([[np.cos(alpha), -np.sin(alpha)],
                                    [np.sin(alpha), np.cos(alpha)]])
 
@@ -1046,7 +1045,7 @@ class Brain:
             curr_time = time()
             print(
                 f'Pedestrian has cleared the road, keep waiting for: \
-                {curr_time - last_seen_pedestrian_time}/{PEDESTRIAN_TIMEOUT}')
+{curr_time - last_seen_pedestrian_time}/{PEDESTRIAN_TIMEOUT}')
             if curr_time - last_seen_pedestrian_time > PEDESTRIAN_TIMEOUT:
                 sleep(SLEEP_AFTER_STOPPING)
                 print(f'Switching back to {self.prev_state}')
@@ -1066,7 +1065,7 @@ class Brain:
                                       self.car.x_est,
                                       self.car.y_est)
             self.curr_state.just_switched = False
-        if tl_state == nac.GREEN or nac.SEMAPHORE_IS_ALWAYS_GREEN:
+        if tl_state == nac.GREEN or SEMAPHORE_IS_ALWAYS_GREEN:
             self.switch_to_state(nac.INTERSECTION_NAVIGATION)
 
     def waiting_at_stopline(self):
@@ -1222,21 +1221,21 @@ class Brain:
                 closest_node, distance = self.\
                     path_planner.get_closest_node(curr_pos)
                 print(f'GPS converged, node: {closest_node}, distance: \
-                        {distance:.2f}')
+{distance:.2f}')
                 if closest_node in RB_NODES_LEFT_LANE:
                     self.curr_state.var4 = True
                 elif closest_node in RB_NODES_RIGHT_LANE:
                     self.curr_state.var4 = False
                 else:
                     self.error('ERROR: ROADBLOCK: GPS converged but we are \
-                            not in a possible node for switching lane')
+not in a possible node for switching lane')
                 if distance > 0.8:
                     self.error('ERROR: REROUTING: GPS converged, but distance \
-                            is too large, we are too far from the lane')
+is too large, we are too far from the lane')
             else:
                 start_time = self.curr_state.var2
                 print(f'Waiting for gps: \
-                        {(curr_time-start_time):.1f}/{GPS_TIMEOUT}')
+{(curr_time-start_time):.1f}/{GPS_TIMEOUT}')
                 if curr_time - start_time > GPS_TIMEOUT:
                     # TODO manage this case
                     self.error('WARNING: AVOIDING ROADBLOCK: No gps signal')
@@ -1309,7 +1308,7 @@ class Brain:
                 park_type = T_PARK
             else:
                 self.error('ERROR: PARKING -> parking spot is not close to \
-                        expected parking spot position!')
+expected parking spot position!')
             self.curr_state.var1 = (park_state, park_type, True)
             self.curr_state.just_switched = False
 
@@ -1347,8 +1346,8 @@ class Brain:
                                                 park_type, True)
                         self.parking_method = 'sign'
                     print(f'Parking: GPS not trusted, \
-                            waiting for GPS to be trusted for \
-                            {passed_time}/{PARK_MAX_SECONDS_W8_GPS} [s]...')
+waiting for GPS to be trusted for \
+{passed_time}/{PARK_MAX_SECONDS_W8_GPS} [s]...')
                 else:  # gps is trusted or we have already trusted it
                     # we trusted gps once
                     self.curr_state.var2 = trusted_gps_once = True
@@ -1379,11 +1378,10 @@ class Brain:
                                                     park_type, True)
                         else:
                             print(f'getting closer...  dist: \
-                                    {self.car.dist_loc:.2f}/\
-                                    {MAX_PARK_SEARCH_DIST:.2f}')
+{self.car.dist_loc:.2f}/{MAX_PARK_SEARCH_DIST:.2f}')
                     else:
                         self.error('ERROR: PARKING: In front of parking spot, \
-                                or maximum search distance reached')
+or maximum search distance reached')
             elif (self.parking_method == 'sign' or ALWAYS_USE_SIGN_FOR_PARKING
                   ) and not ALWAYS_USE_GPS_FOR_PARKING:
                 print('Using sign for parking')
@@ -1416,13 +1414,13 @@ class Brain:
                         self.curr_state.var3 = True  # parking sign reached
                         park_sign_counter = 0
                         print('Reached parking spot, keep going until the \
-                                sign disappears')
+sign disappears')
                 else:  # parking sign reached
                     if sign != 'park':
                         park_sign_counter += 1
                     if park_sign_counter >= PARK_SIGN_DETETCTION_PATIENCE:
                         print('Sign disappeared, setting up things for \
-                                searching for parked cars')
+searching for parked cars')
                         self.car.drive_speed(0.0)
                         # go to next substate
                         self.curr_state.var1 = (CHECKING_FOR_PARKED_CARS,
@@ -1499,7 +1497,7 @@ class Brain:
                 overshoot_distance = dist_first_spot+dist_spots+further_dist +\
                         MAX_ERROR_ON_LOCAL_DIST-curr_dist
                 self.error(f'ERROR: PARKING: CHECKING_CARS: \
-                        Overshoot distance, error: {overshoot_distance:.2f}')
+Overshoot distance, error: {overshoot_distance:.2f}')
 
             # update var2 at the end of every iteration
             self.curr_state.var2 = (car_in_spot1, car_in_spot2,
@@ -1546,11 +1544,11 @@ class Brain:
                     overshoot_distance = dist_spots + MAX_ERROR_ON_LOCAL_DIST \
                             - dist
                     self.error(f'ERROR: PARKING: STEP0: Overshoot distance, \
-                            error: {overshoot_distance:.2f}')
+error: {overshoot_distance:.2f}')
 
         elif park_state == T_STEP2:
             print('T-parking manouver step 2, we are aligned with the parking \
-                    spot, going right and backward')
+spot, going right and backward')
             self.activate_routines([])
             if just_changed:
                 self.car.drive_angle(+T_ANGLE)
@@ -1566,7 +1564,7 @@ class Brain:
                 overshoot_distance = DIST_2T + MAX_ERROR_ON_LOCAL_DIST - \
                         self.car.dist_loc
                 self.error(f'ERROR: PARKING: T_STEP2: Overshoot distance, \
-                        error:{overshoot_distance:.2f}')
+error:{overshoot_distance:.2f}')
         elif park_state == T_STEP3:
             print('T-parking manouver step 3, going backward')
             print(f'Distance: {self.car.dist_loc:.2f}/{DIST_3T}')
@@ -1589,7 +1587,7 @@ class Brain:
                 overshoot_distance = DIST_3T + MAX_ERROR_ON_LOCAL_DIST - \
                         self.car.dist_loc
                 self.error(f'ERROR: PARKING: T_STEP3: Overshoot distance, \
-                        error:{overshoot_distance:.2f}')
+error:{overshoot_distance:.2f}')
         elif park_state == T_STEP4:
             print('T-parking manouver step 4, going forward')
             print(f'Distance: {self.car.dist_loc:.2f}/{DIST_3T}')
@@ -1608,7 +1606,7 @@ class Brain:
                 overshoot_distance = DIST_3T + MAX_ERROR_ON_LOCAL_DIST - \
                         self.car.dist_loc
                 self.error(f'ERROR: PARKING: T_STEP4: Overshoot distance, \
-                        error:{overshoot_distance:.2f}')
+error:{overshoot_distance:.2f}')
         elif park_state == T_STEP5:
             print('T-parking manouver step 5, going right and forward')
             print(f'Distance: {self.car.dist_loc:.2f}/{DIST_2T}')
@@ -1628,7 +1626,7 @@ class Brain:
                 overshoot_distance = DIST_2T + MAX_ERROR_ON_LOCAL_DIST - \
                         self.car.dist_loc
                 self.error(f'ERROR: PARKING: T_STEP5: Overshoot distance, \
-                        error:{overshoot_distance:.2f}')
+error:{overshoot_distance:.2f}')
 
         # # S parking manouver
         # elif park_state == S_STEP1:
@@ -1651,7 +1649,7 @@ class Brain:
                 overshoot_distance = DIST_2S + MAX_ERROR_ON_LOCAL_DIST - \
                         self.car.dist_loc
                 self.error(f'ERROR: PARKING: S_STEP2: Overshoot distance, \
-                        error:{overshoot_distance:.2f}')
+error:{overshoot_distance:.2f}')
         elif park_state == S_STEP3:
             print('S-parking manouver step 3')
             print(f'Distance: {self.car.dist_loc:.2f}/{DIST_2S}')
@@ -1670,7 +1668,7 @@ class Brain:
                 overshoot_distance = DIST_2S + MAX_ERROR_ON_LOCAL_DIST - \
                         self.car.dist_loc
                 self.error(f'ERROR: PARKING: S_STEP3: Overshoot distance, \
-                        error:{overshoot_distance:.2f}')
+error:{overshoot_distance:.2f}')
         elif park_state == S_STEP4:
             print('S-parking manouver step 4')
             print(f'Distance: {self.car.dist_loc:.2f}/{DIST_4S}')
@@ -1693,7 +1691,7 @@ class Brain:
                 overshoot_distance = DIST_4S + MAX_ERROR_ON_LOCAL_DIST - \
                         self.car.dist_loc
                 self.error(f'ERROR: PARKING: S_STEP4: Overshoot distance, \
-                        error:{overshoot_distance:.2f}')
+error:{overshoot_distance:.2f}')
         elif park_state == S_STEP5:
             print('S-parking manouver step 5')
             print(f'Distance: {self.car.dist_loc:.2f}/{DIST_4S}')
@@ -1713,7 +1711,7 @@ class Brain:
                 overshoot_distance = DIST_4S + MAX_ERROR_ON_LOCAL_DIST - \
                         self.car.dist_loc
                 self.error(f'ERROR: PARKING: S_STEP5: Overshoot distance, \
-                        error:{overshoot_distance:.2f}')
+error:{overshoot_distance:.2f}')
         elif park_state == S_STEP6:
             print('S-parking manouver step 6')
             print(f'Distance: {self.car.dist_loc:.2f}/{DIST_2S}')
@@ -1732,7 +1730,7 @@ class Brain:
                 overshoot_distance = DIST_2S + MAX_ERROR_ON_LOCAL_DIST - \
                         self.car.dist_loc
                 self.error(f'ERROR: PARKING: S_STEP6: Overshoot distance, \
-                        error:{overshoot_distance:.2f}')
+error:{overshoot_distance:.2f}')
         elif park_state == S_STEP7:
             print('S-parking manouver step 7')
             print(f'Distance: {self.car.dist_loc:.2f}/{DIST_2S}')
@@ -1751,7 +1749,7 @@ class Brain:
                 overshoot_distance = DIST_2S + MAX_ERROR_ON_LOCAL_DIST - \
                         self.car.dist_loc
                 self.error(f'ERROR: PARKING: S_STEP7: Overshoot distance, \
-                        error:{overshoot_distance:.2f}')
+error:{overshoot_distance:.2f}')
 
         # end of manouver, go to next event
         elif park_state == PARK_END:
@@ -1851,7 +1849,7 @@ class Brain:
         output_speed, output_angle = self.controller_sp.get_control_speed(
                 0.0, 0.0, e3)
         print(f'output_speed: {output_speed:.2f}, output_angle: \
-                {np.rad2deg(output_angle):.2f}')
+{np.rad2deg(output_angle):.2f}')
         self.car.drive(speed=output_speed, angle=np.rad2deg(output_angle))
 
     # =============== ROUTINES =============== #
@@ -1942,8 +1940,7 @@ class Brain:
                         if self.sign_seen[i] == 0:
                             self.sign_seen[i] = 1
                             print(f'SEEN SIGN \
-                                    {nac.SIGN_NAMES[self.sign_types[i]]}, at \
-                                    pos {self.sign_points[i]}')
+{nac.SIGN_NAMES[self.sign_types[i]]}, at pos {self.sign_points[i]}')
                             self.curr_sign = nac.SIGN_NAMES[self.sign_types[i]]
                 else:
                     self.curr_sign = nac.NO_SIGN
@@ -2065,21 +2062,21 @@ class Brain:
     # ===================== STATE MACHINE MANAGEMENT ===================== #
     def run(self):
         print('===============================================================\
-                ===========')
+===========')
         print(f'STATE:          {self.curr_state}')
         print(f'UPCOMING_EVENT: {self.next_event}')
         print(f'ROUTINES:    {self.active_routines_names+ALWAYS_ON_ROUTINES}')
         print(f'CONDITIONS:  {self.conditions}')
         print('===============================================================\
-                ===========')
+===========')
         self.run_current_state()
         print(f'CURR_SIGN: {self.curr_sign}')
         print('===============================================================\
-                ===========')
+===========')
         print()
         self.run_routines()
         print('===============================================================\
-                ===========')
+===========')
         print()
         self.check_logic()
 
@@ -2100,7 +2097,7 @@ class Brain:
         """
         assert all([r in self.routines.keys() for r in routines_to_activate]),\
             'ERROR: activate_routines: routines_to_activate contains \
-            invalid routine'
+invalid routine'
         self.active_routines_names = []
         for k, r in self.routines.items():
             r.active = k in routines_to_activate
@@ -2114,7 +2111,7 @@ class Brain:
         """
         assert all([r in self.routines.keys() for r in routines]), \
             'ERROR: add_routines: routines_to_activate contains \
-            invalid routine'
+invalid routine'
         for k in routines:
             self.routines[k].active = True
 
@@ -2183,7 +2180,7 @@ class Brain:
                 loc_path = path_ahead - point
                 # get yaw of the stopline
                 assert path_ahead.shape[0] > 10, f'path_ahead is too short: \
-                        {path_ahead.shape[0]}'
+{path_ahead.shape[0]}'
                 path_first_10 = path_ahead[:10]
                 diff10 = path_first_10[1:] - path_first_10[:-1]
                 yaw_raw = np.median(np.arctan2(diff10[:, 1], diff10[:, 0]))
@@ -2196,7 +2193,7 @@ class Brain:
                 path_to_ret = loc_path
                 curv = hf.get_curvature(path_ahead)
                 print(f'yaw_stopline: {yaw_stopline}, name: \
-                        {name}, curv: {curv}')
+{name}, curv: {curv}')
                 len_path_ahead = 0.01*len(path_ahead)
             else:
                 path_to_ret = None

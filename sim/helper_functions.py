@@ -50,11 +50,11 @@ def pix2mR(pix):
     return mL2mR(pix2mL(pix))
 
 
-def draw_car(map, x, y, angle, color=(0, 255, 0),  draw_body=True):
-    # function to draw the car on the map
+def draw_car(track, x, y, angle, color=(0, 255, 0),  draw_body=True):
+    # function to draw the car on the track
     car_length = 0.45-0.22  # m
     car_width = 0.2  # m
-    # match angle with map frame of reference
+    # match angle with track frame of reference
     # angle = yaw2world(angle)
     # find 4 corners not rotated car_width
     corners = np.array([[-0.22, car_width/2],
@@ -69,8 +69,8 @@ def draw_car(map, x, y, angle, color=(0, 255, 0),  draw_body=True):
     corners = corners + np.array([x, y])
     # draw body
     if draw_body:
-        cv.polylines(map, [mR2pix(corners)], True, color, 3, cv.LINE_AA)
-    return map
+        cv.polylines(track, [mR2pix(corners)], True, color, 3, cv.LINE_AA)
+    return track
 
 
 def project_onto_frame(frame, car, points, align_to_car=True,
@@ -355,28 +355,29 @@ def create_frames(show):
 
 def show_track(track, car, show=True):
     if show:
-        map1 = map.copy()
-        draw_car(map1, car.x_true, car.y_true, car.yaw_true)
-        cv.imshow('Map', map1)
+        track1 = track.copy()
+        draw_car(track1, car.x_true, car.y_true, car.yaw_true)
+        cv.imshow('Map', track1)
         cv.waitKey(1)
 
 
 def show_car(track, car, brain, show=True):
     if show:
-        map1 = track.copy()
-        draw_car(map1, car.x, car.y, car.yaw, color=(180, 0, 0))
+        track1 = track.copy()
+        draw_car(track1, car.x, car.y, car.yaw, color=(180, 0, 0))
         if car.trust_gps:
             color = (255, 0, 255)
         else:
             color = (100, 0, 100)
-        draw_car(map1, car.x_true, car.y_true, car.yaw_true, color=(0, 180, 0))
-        draw_car(map1, car.x_est, car.y_est, car.yaw, color=color)
+        draw_car(track1, car.x_true, car.y_true,
+                 car.yaw_true, color=(0, 180, 0))
+        draw_car(track1, car.x_est, car.y_est, car.yaw, color=color)
         if len(brain.path_planner.path) > 0:
-            cv.circle(map1, mR2pix(brain.path_planner.path[int(
+            cv.circle(track1, mR2pix(brain.path_planner.path[int(
                 brain.car_dist_on_path*100)]), 10, (150, 50, 255), 3)
         # else:
         #     print('No path')
-        cv.imshow('Map', map1)
+        cv.imshow('Map', track1)
         cv.waitKey(1)
 
 

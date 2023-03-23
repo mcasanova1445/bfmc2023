@@ -131,7 +131,7 @@ class Automobile_Data():
         self.y_est = 0.0                # [m] EST:y EKF estimated global coord
         self.yaw_est = self.yaw_offset  # [rad] EST:yaw EKF estimated
         self.gps_cnt = 0
-        self.trust_gps = False  # [bool] EST:var is true if the EKF trusts GPS
+        self.trust_gps = True  # [bool] EST:var is true if the EKF trusts GPS
         self.buffer_gps_positions_still_car = []
         # LOCAL POSITION
         self.x_loc = 0.0       # [m] local:x local coord
