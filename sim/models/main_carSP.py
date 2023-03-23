@@ -14,7 +14,7 @@ import collections
 
 from control.automobile_data_pi import AutomobileDataPi     # I/O car manager
 from controllerSP import ControllerSpeed              # Lane Keeping
-from helper_functions import *                  # helper functions
+import helper_functions as hf                  # helper functions
 from detection import Detection                 # detection
 
 # FLAGS
@@ -162,14 +162,14 @@ if __name__ == '__main__':
                     
                     # =================================================
                     #project point ahead
-                    # frame, proj = project_onto_frame(frame, car, point_ahead, False, color=(200, 200, 100))
-                    frame, proj = project_onto_frame(frame, car, long_point_ahead, False, color=(200, 100, 200))
+                    # frame, proj = hf.project_onto_frame(frame, car, point_ahead, False, color=(200, 200, 100))
+                    frame, proj = hf.project_onto_frame(frame, car, long_point_ahead, False, color=(200, 100, 200))
                     if proj is not None:
                         #convert proj to cv2 point
                         proj = (int(proj[0]), int(proj[1]))
                         #draw line from bottom half to proj
                         cv.line(frame, (320//2,479//2), proj, (200, 100, 200), 2)
-                    # frame, proj = project_onto_frame(frame, car, short_point_ahead, False, color=(200, 200, 100))
+                    # frame, proj = hf.project_onto_frame(frame, car, short_point_ahead, False, color=(200, 200, 100))
                     if proj is not None:
                         #convert proj to cv2 point
                         proj = (int(proj[0]), int(proj[1]))
