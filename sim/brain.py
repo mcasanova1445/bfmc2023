@@ -821,11 +821,10 @@ simple net estimation')
                                                     SHOW_IMGS and False) * 0.8
             print(f'alpha est: {np.rad2deg(alpha):.1f}')
             if APPLY_YAW_CORRECTION:
-                closest_node, dist_node = self.path_planner.get_closest_node(
+                closest_node, _ = self.path_planner.get_closest_node(
                         np.array([self.car.x, self.car.y]))
-                if closest_node in self.path_planner.no_yaw_calibration_nodes:
-                    pass
-                else:
+                if closest_node not in \
+                        self.path_planner.no_yaw_calibration_nodes:
                     print(f'yaw = {np.rad2deg(self.car.yaw):.2f}')
                     print(
                         f'est yaw = \
@@ -840,11 +839,11 @@ simple net estimation')
 better aligned, alpha = {alpha}'
 
             # get position of the car in the stop line frame
-            local_path_cf = local_path_slf_rot
             # NOTE: rotation first if we ignore the lateral error and \
             #       consider only the euclidean distance from the line
-            local_path_cf = local_path_cf @ hf.rot_matrix(alpha)
-            local_path_cf = local_path_cf - car_position_slf  # cf = car frame
+            # cf = car frame
+            local_path_cf = (local_path_slf_rot @ hf.rot_matrix(alpha)) - \
+                car_position_slf
             # rotate from slf to cf
             self.curr_state.var1 = local_path_cf
             # Every time we stop for a stopline, we reset the local

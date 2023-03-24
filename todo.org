@@ -28,6 +28,14 @@
 
 ** Move IMU away from the motor                                                 :Marco:
 
+** Move flags and stuff to the main                                             :Miguel:
+
+** WHEEL_LEN, GPS_CONVERGENCE_PATIANCE are not used
+
+** Consider creating a special maneauver to exit the junction
+
+** Unify stopline detection (only advanced?)
+
 * Weekly meetings: Tuesday 09h00
 
 * PRIORITY: CNN
