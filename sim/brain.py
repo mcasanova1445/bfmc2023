@@ -20,7 +20,7 @@ from environmental_data_simulator import EnvironmentalData
 
 import helper_functions as hf
 
-SHOW_IMGS = False
+SHOW_IMGS = True
 
 END_NODE = 85
 # CHECKPOINTS = [299, 275] #roundabout
@@ -573,10 +573,10 @@ Starting from the first checkpoint')
         elif self.next_event.name == nac.HIGHWAY_EXIT_EVENT:
             if self.conditions[nac.TRUST_GPS] or True:
                 diff = self.next_event.dist - self.car_dist_on_path
-                if 0.0+0.1 < diff:
+                if diff > 0.1:
                     print(f'Driving toward highway exit: exiting in \
 {diff:.2f} [m]')
-                elif -0.05 < diff <= 0.0+0.1:
+                elif diff > -0.05:
                     print('Arrived at highway exit, switching to going \
 straight for exiting')
                     self.switch_to_state(nac.GOING_STRAIGHT)
@@ -599,8 +599,7 @@ straight for exiting')
                 if dist_to_end > END_STATE_DISTANCE_THRESHOLD:
                     print(f'Driving toward end: exiting in \
 {dist_to_end:.2f} [m]')
-                elif -END_STATE_DISTANCE_THRESHOLD < dist_to_end <= \
-                        END_STATE_DISTANCE_THRESHOLD:
+                elif dist_to_end > -END_STATE_DISTANCE_THRESHOLD:
                     print('Arrived at end, switching to end state')
                     self.switch_to_state(nac.END_STATE)
                 else:
@@ -611,11 +610,11 @@ straight for exiting')
         else:
             if self.conditions[nac.TRUST_GPS]:
                 dist_to_stopline = self.next_event.dist - self.car_dist_on_path
-                if GPS_STOPLINE_APPROACH_DISTANCE <= dist_to_stopline:
+                if dist_to_stopline >= GPS_STOPLINE_APPROACH_DISTANCE:
                     print(
                         f'Stopline is far: \
 {dist_to_stopline-GPS_STOPLINE_APPROACH_DISTANCE:.2f} [m]')
-                if 0.0 < dist_to_stopline < GPS_STOPLINE_APPROACH_DISTANCE:
+                elif dist_to_stopline > 0.0:
                     print('Switching to approaching stopline')
                     self.switch_to_state(nac.APPROACHING_STOP_LINE)
                 else:
@@ -775,10 +774,8 @@ UNKNOWN EVENT AS NEXT EVENT')
 
                 if USE_PRECISE_LOCATION_AND_YAW:
                     angle = self.car.yaw
-                    rot_matrix = np.array([[np.cos(angle), -np.sin(angle)],
-                                           [np.sin(angle), np.cos(angle)]])
                     car_position_slf = point_car_est - stop_line_position
-                    car_position_slf = car_position_slf @ rot_matrix
+                    car_position_slf = car_position_slf @ hf.rot_matrix(angle)
                 else:
                     x_dist = self.next_event.dist - self.car_dist_on_path
                     y_dist = 0.0
@@ -841,14 +838,12 @@ simple net estimation')
             assert abs(alpha) < np.pi/6, \
                 f'Car orientation wrt stopline is too big, it needs to be \
 better aligned, alpha = {alpha}'
-            rot_matrix = np.array([[np.cos(alpha), -np.sin(alpha)],
-                                   [np.sin(alpha), np.cos(alpha)]])
 
             # get position of the car in the stop line frame
             local_path_cf = local_path_slf_rot
             # NOTE: rotation first if we ignore the lateral error and \
             #       consider only the euclidean distance from the line
-            local_path_cf = local_path_cf @ rot_matrix
+            local_path_cf = local_path_cf @ hf.rot_matrix(alpha)
             local_path_cf = local_path_cf - car_position_slf  # cf = car frame
             # rotate from slf to cf
             self.curr_state.var1 = local_path_cf
@@ -875,11 +870,7 @@ better aligned, alpha = {alpha}'
         idx_point_ahead = np.argmin(dist_path) + idx_car_on_path
         print(f'idx_point_ahead: {idx_point_ahead} / {len(local_path_cf)}')
 
-        rot_matrix = np.array([[np.cos(self.car.yaw_loc),
-                                -np.sin(self.car.yaw_loc)],
-                               [np.sin(self.car.yaw_loc),
-                                np.cos(self.car.yaw_loc)]])
-        local_path_cf = local_path_cf @ rot_matrix
+        local_path_cf = local_path_cf @ hf.rot_matrix(self.car.yaw_loc)
 
         hf.show_local_path(self, car_pos_loc, SHOW_IMGS)
 
@@ -2047,11 +2038,7 @@ invalid routine'
                 diff10 = path_first_10[1:] - path_first_10[:-1]
                 yaw_raw = np.median(np.arctan2(diff10[:, 1], diff10[:, 0]))
                 yaw_stopline = hf.get_yaw_closest_axis(yaw_raw)
-                rot_matrix = np.array([[np.cos(yaw_stopline),
-                                        -np.sin(yaw_stopline)],
-                                       [np.sin(yaw_stopline),
-                                        np.cos(yaw_stopline)]])
-                loc_path = loc_path @ rot_matrix
+                loc_path = loc_path @ hf.rot_matrix(yaw_stopline)
                 path_to_ret = loc_path
                 curv = hf.get_curvature(path_ahead)
                 print(f'yaw_stopline: {yaw_stopline}, name: \

@@ -60,9 +60,7 @@ def draw_car(track, x, y, angle, color=(0, 255, 0),  draw_body=True):
                         [car_length, -car_width/2],
                         [-0.22, -car_width/2]])
     # rotate corners
-    rot_matrix = np.array([[np.cos(angle), -np.sin(angle)],
-                           [np.sin(angle), np.cos(angle)]])
-    corners = corners @ rot_matrix.T
+    corners = corners @ rot_matrix(angle).T
     # add car position
     corners = corners + np.array([x, y])
     # draw body
@@ -163,9 +161,7 @@ def to_car_frame(points, car, return_size=3):
             "wrong size, got {}".format(out.shape[1])
     elif points.shape[1] == 2:
         points_cf = points - np.array([car.x_true, car.y_true])
-        rot_matrix = np.array([[np.cos(gamma), -np.sin(gamma)],
-                               [np.sin(gamma), np.cos(gamma)]])
-        out = points_cf @ rot_matrix
+        out = points_cf @ rot_matrix(gamma)
         if return_size == 3:
             out = np.concatenate((out, np.zeros((out.shape[0], 1))), axis=1)
         assert out.shape[1] == return_size, \
@@ -272,11 +268,7 @@ def project_stopline(frame, car, stopline_x, stopline_y,
 
     slp_cf = np.array([stopline_x+0.35, stopline_y])
 
-    rot_matrix = np.array([[np.cos(car_angle_to_stopline),
-                            -np.sin(car_angle_to_stopline)],
-                           [np.sin(car_angle_to_stopline),
-                            np.cos(car_angle_to_stopline)]])
-    points = points @ rot_matrix  # rotation
+    points = points @ rot_matrix(car_angle_to_stopline)  # rotation
     points = points + slp_cf  # translation
 
     frame, proj_points = project_onto_frame(frame=frame,
@@ -331,7 +323,7 @@ def show_track(track, car, show=True):
         track1 = track.copy()
         draw_car(track1, car.x_true, car.y_true, car.yaw_true)
         cv.imshow('Map', track1)
-        cv.waitKey(1)
+        # cv.waitKey(1)
 
 
 def show_car(track, car, brain, show=True):
@@ -349,7 +341,7 @@ def show_car(track, car, brain, show=True):
             cv.circle(track1, mR2pix(brain.path_planner.path[int(
                 brain.car_dist_on_path*100)]), 10, (150, 50, 255), 3)
         cv.imshow('Map', track1)
-        cv.waitKey(1)
+        # cv.waitKey(1)
 
 
 def show_camera(car, brain, show=True):
@@ -376,25 +368,23 @@ def show_local_path_just_switched(brain,
         img, _ = project_onto_frame(img, brain.car, local_path_cf,
                                     align_to_car=False)
         cv.imshow('brain_debug', img)
-        cv.waitKey(1)
+        # cv.waitKey(1)
         # var2 hold original position
         brain.curr_state.var2 = np.array([brain.car.x_true,
                                          brain.car.y_true])
         true_start_pos_wf = brain.curr_state.var2
 
         alpha = alpha + stop_line_yaw
-        rot_matrix = np.array([[np.cos(alpha), -np.sin(alpha)],
-                              [np.sin(alpha), np.cos(alpha)]])
 
         est_car_pos_slf = car_position_slf
-        est_car_pos_slf_rot = est_car_pos_slf @ rot_matrix.T
+        est_car_pos_slf_rot = est_car_pos_slf @ rot_matrix(alpha).T
         est_car_pos_wf = est_car_pos_slf_rot + stop_line_position
         cv.circle(brain.path_planner.map, mR2pix(est_car_pos_wf),
                   25, (255, 0, 255), 5)
         cv.circle(brain.path_planner.map, mR2pix(true_start_pos_wf),
                   30, (0, 255, 0), 5)
         cv.imshow('Path', brain.path_planner.map)
-        cv.waitKey(1)
+        # cv.waitKey(1)
 
         cv.namedWindow('local_path', cv.WINDOW_NORMAL)
         local_map_img = np.zeros_like(brain.path_planner.map)
@@ -411,7 +401,7 @@ def show_local_path_just_switched(brain,
                 pix = (int(pix[0]+w//2), int(pix[1]-h//2))
                 cv.circle(local_map_img, pix, 10, (0, 150, 150), -1)
         cv.imshow('local_path', local_map_img)
-        cv.waitKey(1)
+        # cv.waitKey(1)
         brain.curr_state.var3 = local_map_img
 
 
@@ -421,8 +411,6 @@ def show_local_path(brain, car_pos_loc, show=True):
         h = local_map_img.shape[0]
         w = local_map_img.shape[1]
         angle = brain.car.yaw_loc_o  # + brain.car.yaw_loc
-        rot_matrix_w = np.array([[np.cos(angle), -np.sin(angle)],
-                                 [np.sin(angle), np.cos(angle)]])
         # show car position in the local frame (from the encoder)
         cv.circle(local_map_img, (mR2pix(car_pos_loc)[0]+w//2,
                                   mR2pix(car_pos_loc)[1]-h//2),
@@ -432,13 +420,13 @@ def show_local_path(brain, car_pos_loc, show=True):
         true_start_pos_wf = brain.curr_state.var2
         true_pos_loc = np.array([brain.car.x_true, brain.car.y_true]) - \
             true_start_pos_wf
-        true_pos_loc = true_pos_loc @ rot_matrix_w
+        true_pos_loc = true_pos_loc @ rot_matrix(angle)
         cv.circle(local_map_img, (mR2pix(true_pos_loc)[0]+w//2,
                                   mR2pix(true_pos_loc)[1]-h//2),
                   7, (0, 255, 0), 2)
         cv.imshow('local_path', local_map_img)
         true_start_pos_wf = brain.curr_state.var2
-        car_pos_loc_rot_wf = car_pos_loc @ rot_matrix_w.T
+        car_pos_loc_rot_wf = car_pos_loc @ rot_matrix(angle).T
         car_pos_wf = true_start_pos_wf + car_pos_loc_rot_wf
         # show car position in wf (encoder)
         cv.circle(brain.path_planner.map, mR2pix(car_pos_wf), 5,
@@ -448,7 +436,7 @@ def show_local_path(brain, car_pos_loc, show=True):
         cv.circle(brain.path_planner.map, mR2pix(true_pos_wf), 7,
                   (0, 255, 0), 2)
         cv.imshow('Path', brain.path_planner.map)
-        cv.waitKey(1)
+        # cv.waitKey(1)
 
 
 def show_brain_debug(brain, local_path_cf, point_ahead, show):
@@ -460,7 +448,7 @@ def show_brain_debug(brain, local_path_cf, point_ahead, show):
                                     align_to_car=False,
                                     color=(0, 0, 255))
         cv.imshow('brain_debug', img)
-        cv.waitKey(1)
+        # cv.waitKey(1)
 
 
 def show_follow_lane(brain, point_ahead, show):
@@ -474,4 +462,9 @@ def show_follow_lane(brain, point_ahead, show):
                       (int(img.shape[1]/2), int(img.shape[0])),
                       (255, 0, 255), 2)
         cv.imshow('brain_debug', img)
-        cv.waitKey(1)
+        # cv.waitKey(1)
+
+
+def rot_matrix(angle):
+    return np.array([[np.cos(angle), -np.sin(angle)],
+                    [np.sin(angle), np.cos(angle)]])

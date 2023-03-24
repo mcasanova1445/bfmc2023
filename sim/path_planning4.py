@@ -7,7 +7,7 @@ from pyclothoids import Clothoid
 import names_and_constants as nac
 import helper_functions as hf
 
-SHOW_IMGS = False
+SHOW_IMGS = True
 
 
 class PathPlanning():
@@ -597,7 +597,7 @@ class PathPlanning():
                      thickness=4, lineType=cv.LINE_AA)
         if SHOW_IMGS:
             cv.imshow('Path', self.map)
-            cv.waitKey(1)
+            # cv.waitKey(1)
 
     def get_closest_node(self, p):
         '''

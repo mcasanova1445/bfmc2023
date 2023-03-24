@@ -1,4 +1,4 @@
-import cv2  # Import the OpenCV library to enable computer vision
+import cv2 as cv  # Import the OpenCV library to enable computer vision
 import numpy as np  # Import the NumPy scientific computing library
 import matplotlib.pyplot as plt  # Used for plotting and error checking
 
@@ -162,10 +162,10 @@ class StopLine:
             win_x_high = self.warped_frame.shape[1] - window * window_width
             win_y_low = y_current - margin
             win_y_high = y_current + margin
-            cv2.rectangle(frame_sliding_window,
-                          (win_x_low, win_y_low),
-                          (win_x_high, win_y_high),
-                          (255, 255, 255), 2)
+            cv.rectangle(frame_sliding_window,
+                         (win_x_low, win_y_low),
+                         (win_x_high, win_y_high),
+                         (255, 255, 255), 2)
 
             # Identify the nonzero pixels in x and y within the window
             good_inds = ((nonzeroy >= win_y_low) &
@@ -216,7 +216,7 @@ class StopLine:
             figure, (ax1, ax2, ax3) = plt.subplots(3, 1)  # 3 rows, 1 column
             figure.set_size_inches(10, 10)
             figure.tight_layout(pad=3.0)
-            ax1.imshow(cv2.cvtColor(self.orig_frame, cv2.COLOR_BGR2RGB))
+            ax1.imshow(cv.cvtColor(self.orig_frame, cv.COLOR_BGR2RGB))
             ax2.imshow(frame_sliding_window, cmap='gray')
             ax3.imshow(out_img)
             ax3.plot(plotx, line_fity, color='yellow')
@@ -239,7 +239,7 @@ class StopLine:
 
         # Convert the video frame from BGR (blue, green, red)
         # color space to HLS (hue, saturation, lightness).
-        hls = cv2.cvtColor(frame, cv2.COLOR_BGR2HLS)
+        hls = cv.cvtColor(frame, cv.COLOR_BGR2HLS)
 
         # ############## Isolate possible lane line edges ##################
 
@@ -249,8 +249,8 @@ class StopLine:
         # sxbinary is a matrix full of 0s (black) and 255 (white)
         # intensity values
         # Relatively light pixels get made white. Dark pixels get made black.
-        _, sxbinary = cv2.threshold(hls[:, :, 1], 160, 255, cv2.THRESH_BINARY)
-        sxbinary = cv2.GaussianBlur(sxbinary, (3, 3), 0)  # Reduce noise
+        _, sxbinary = cv.threshold(hls[:, :, 1], 160, 255, cv.THRESH_BINARY)
+        sxbinary = cv.GaussianBlur(sxbinary, (3, 3), 0)  # Reduce noise
 
         # 1s will be in the cells with the highest Sobel derivative values
         # (i.e. strongest lane line edges)
@@ -271,8 +271,8 @@ class StopLine:
         # this value for best results).
         s_channel = hls[:, :, 2]  # use only the saturation channel data
         # <++>
-        _, s_binary = cv2.threshold(s_channel, 50, 255, cv2.THRESH_BINARY_INV)
-        s_binary = cv2.GaussianBlur(s_binary, (3, 3), 0)  # Reduce noise
+        _, s_binary = cv.threshold(s_channel, 50, 255, cv.THRESH_BINARY_INV)
+        s_binary = cv.GaussianBlur(s_binary, (3, 3), 0)  # Reduce noise
 
         # Perform binary thresholding on the R (red) channel of the original
         # BGR video frame. r_thresh is a matrix full of 0s (black) and 255
@@ -280,21 +280,21 @@ class StopLine:
         # channel values (e.g. >120).
         # Remember, pure white is bgr(255, 255, 255).
         # Pure yellow is bgr(0, 255, 255). Both have high red channel values.
-        _, r_thresh = cv2.threshold(frame[:, :, 2], 170, 255,
-                                    cv2.THRESH_BINARY)
-        r_thresh = cv2.GaussianBlur(r_thresh, (3, 3), 0)  # Reduce noise
+        _, r_thresh = cv.threshold(frame[:, :, 2], 170, 255,
+                                   cv.THRESH_BINARY)
+        r_thresh = cv.GaussianBlur(r_thresh, (3, 3), 0)  # Reduce noise
 
         # Lane lines should be pure in color and have high red channel values
         # Bitwise AND operation to reduce noise and black-out any pixels that
         # don't appear to be nice, pure, solid colors (like white or yellow
         # lane lines.)
-        rs_binary = cv2.bitwise_and(s_binary, r_thresh)
+        rs_binary = cv.bitwise_and(s_binary, r_thresh)
 
         # = Combine the possible lane lines with the possible lane line edges =
         # If you show rs_binary visually, you'll see that it is not that
         # different from this return value. The edges of lane lines are thin
         # lines of pixels.
-        self.lane_line_markings = cv2.bitwise_and(rs_binary, sxbinary.astype(
+        self.lane_line_markings = cv.bitwise_and(rs_binary, sxbinary.astype(
                               np.uint8))
         return self.lane_line_markings
 
@@ -321,36 +321,36 @@ class StopLine:
             frame = self.lane_line_markings
 
         # Calculate the transformation matrix
-        self.transformation_matrix = cv2.getPerspectiveTransform(
+        self.transformation_matrix = cv.getPerspectiveTransform(
             self.roi_points, self.desired_roi_points)
 
         # Calculate the inverse transformation matrix
-        self.inv_transformation_matrix = cv2.getPerspectiveTransform(
+        self.inv_transformation_matrix = cv.getPerspectiveTransform(
             self.desired_roi_points, self.roi_points)
 
         # Perform the transform using the transformation matrix
-        self.warped_frame = cv2.warpPerspective(
+        self.warped_frame = cv.warpPerspective(
             frame, self.transformation_matrix, self.orig_image_size, flags=(
-                cv2.INTER_LINEAR))
+                cv.INTER_LINEAR))
 
         # Convert image to binary
-        (thresh, binary_warped) = cv2.threshold(
-            self.warped_frame, 127, 255, cv2.THRESH_BINARY)
+        (thresh, binary_warped) = cv.threshold(
+            self.warped_frame, 127, 255, cv.THRESH_BINARY)
         self.warped_frame = binary_warped
 
         # Display the perspective transformed (i.e. warped) frame
         if plot is True:
             warped_copy = self.warped_frame.copy()
-            warped_plot = cv2.polylines(warped_copy, np.int32([
+            warped_plot = cv.polylines(warped_copy, np.int32([
                     self.desired_roi_points]), True, (147, 20, 255), 3)
 
             # Display the image
-            cv2.imshow('Warped Image', warped_plot)
+            cv.imshow('Warped Image', warped_plot)
 
             # Press any key to stop
-            cv2.waitKey(0)
+            # cv.waitKey(0)
 
-            # cv2.destroyAllWindows()
+            # cv.destroyAllWindows()
 
         return self.warped_frame
 
@@ -367,18 +367,18 @@ class StopLine:
             frame = self.orig_frame.copy()
 
         # Overlay trapezoid on the frame
-        this_image = cv2.polylines(frame, np.int32([
+        this_image = cv.polylines(frame, np.int32([
             self.roi_points]), True, (147, 20, 255), 3)
 
         # Display the image
         while True:
-            cv2.imshow('ROI Image', this_image)
+            cv.imshow('ROI Image', this_image)
 
             # Press any key to stop
-            if cv2.waitKey(0):
+            if cv.waitKey(0):
                 break
 
-        cv2.destroyAllWindows()
+        cv.destroyAllWindows()
 
 
 def binary_array(array, thresh, value=0):
@@ -449,16 +449,16 @@ def sobel(img_channel, orient='x', sobel_kernel=3):
     :sobel_kernel: N. of rows and columns of the kernel (i.e. 3x3 small matrix)
     :return: Image with Sobel edge detection applied
     """
-    # cv2.Sobel(input image, data type, prder of the derivative x, order of the
+    # cv.Sobel(input image, data type, prder of the derivative x, order of the
     # derivative y, small matrix used to calculate the derivative)
     if orient == 'x':
         # Will detect differences in pixel intensities going from
         # left to right on the image (i.e. edges that are vertically aligned)
-        sobel = cv2.Sobel(img_channel, cv2.CV_64F, 1, 0, ksize=sobel_kernel)
+        sobel = cv.Sobel(img_channel, cv.CV_64F, 1, 0, ksize=sobel_kernel)
     if orient == 'y':
         # Will detect differences in pixel intensities going from
         # top to bottom on the image (i.e. edges that are horizontally aligned)
-        sobel = cv2.Sobel(img_channel, cv2.CV_64F, 0, 1, ksize=sobel_kernel)
+        sobel = cv.Sobel(img_channel, cv.CV_64F, 0, 1, ksize=sobel_kernel)
 
     return sobel
 
@@ -484,8 +484,8 @@ def detect_angle(original_frame=None, plot=False):
 
     # extract lines
     img = warped_frame
-    lines = cv2.HoughLinesP(img, rho=1, theta=np.pi/180,
-                            threshold=30, minLineLength=80, maxLineGap=5)
+    lines = cv.HoughLinesP(img, rho=1, theta=np.pi/180,
+                           threshold=30, minLineLength=80, maxLineGap=5)
     angles = []
     if lines is None:
         return 0.0
@@ -511,7 +511,7 @@ def detect_angle(original_frame=None, plot=False):
 
 def main():
     # Load a frame (or image)
-    original_frame = cv2.imread(filename)
+    original_frame = cv.imread(filename)
     print(detect_angle(original_frame=original_frame, plot=False))
 
 

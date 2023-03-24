@@ -179,7 +179,7 @@ class Detection:
         self.lane_cnt += 1
         if show_ROI:
             cv.imshow('lane_detection', frame)
-            cv.waitKey(1)
+            # cv.waitKey(1)
         return e2, e3, est_point_ahead
 
     def detect_lane_ahead(self, frame, show_ROI=True, faster=False):
@@ -234,7 +234,7 @@ class Detection:
         self.lane_cnt += 1
         if show_ROI:
             cv.imshow('lane_detection', frame)
-            cv.waitKey(1)
+            # cv.waitKey(1)
         return e3, est_point_ahead
 
     def detect_stop_line(self, frame, show_ROI=True):
@@ -267,7 +267,7 @@ class Detection:
         self.lane_cnt += 1
         if show_ROI:
             cv.imshow('stop_line_detection', frame)
-            cv.waitKey(1)
+            # cv.waitKey(1)
         print(f"stop_line_detection dist: {dist:.2f}, in \
                 {stop_line_detection_time:.2f} ms")
         return dist
@@ -305,7 +305,7 @@ class Detection:
         if show_ROI:
             cv.imshow('stop_line_detection', frame)
             cv.imwrite(f'sd/sd_{int(time()*1000)}.png', frame)
-            cv.waitKey(1)
+            # cv.waitKey(1)
         print(f"stop_line_detection dist: {dist:.2f}, in \
                 {stop_line_detection_time:.2f} ms")
         return stopline_x, stopline_y, stopline_angle
@@ -384,7 +384,7 @@ class Detection:
             cv.imshow('ROI', img)
             Detection.draw_ROI(frame, TL, BR, show_rect=False, prediction=None,
                                conf=None, show_prediction=False)
-            cv.waitKey(1)
+            # cv.waitKey(1)
 
         ratio = 1
         img = cv.resize(img, None, fx=ratio, fy=ratio,
@@ -400,7 +400,7 @@ class Detection:
                                      flags=cv.
                                      DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS)
                 cv.imshow('keypoints', cop)
-                cv.waitKey(1)
+                # cv.waitKey(1)
             if len(des) < 10:
                 print('No enougth descriptors')
                 probs_array = np.zeros(len(signs_dict))
@@ -508,7 +508,7 @@ class Detection:
                                    show_prediction=False)
                 cv.imshow('ROI', img)
                 cv.imwrite(f'sd/sd_{int(time()*1000)}.png', img)
-                cv.waitKey(1)
+                # cv.waitKey(1)
             img = cv.GaussianBlur(img, (3, 3), 0)
             kp, des = self.sift.detectAndCompute(img, None)  # des= escriptors
             if des is not None and len(des) >= 15:
@@ -520,7 +520,7 @@ class Detection:
                                          DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS
                                          )
                     cv.imshow('keypoints', cop)
-                    cv.waitKey(1)
+                    # cv.waitKey(1)
                 im_hist = Detection.ImageHistogram(self.kmean_model,
                                                    des, self.no_clusters)
                 im_hist = im_hist.reshape(1, -1)
@@ -589,7 +589,7 @@ class Detection:
                                          DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS
                                          )
                     cv.imshow('keypoints', cop)
-                    cv.waitKey(1)
+                    # cv.waitKey(1)
                 im_hist = Detection.ImageHistogram(self.kmean_model,
                                                    des,
                                                    self.no_clusters)
@@ -684,7 +684,7 @@ class Detection:
             # Draw a rectangle with blue line borders of thickness of 2 px
             image = cv.rectangle(image, TL, BR, color=(255, 0, 0), thickness=2)
             cv.imshow("Frame preview", image)
-            cv.waitKey(1)
+            # cv.waitKey(1)
         if show_rect and show_prediction:
             image = frame.copy()
             # Draw a rectangle with blue line borders of thickness of 2 px
@@ -694,7 +694,7 @@ class Detection:
                        fontFace=cv.FONT_HERSHEY_TRIPLEX, fontScale=0.5,
                        color=(0, 255, 0), thickness=1)
             cv.imshow("Frame preview", image)
-            cv.waitKey(1)
+            # cv.waitKey(1)
 
     def detect_yaw_stopline(self, frame, show_ROI=False):
         return detect_angle(original_frame=frame, plot=show_ROI)
