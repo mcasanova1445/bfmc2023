@@ -68,21 +68,6 @@ class Controller():
         self.e3 = e3  # yaw error [rad]
         alpha = e3
 
-        # # if not self.training:
-        # #     curv = curv*30
-        # if curv == 0.0: r = 10000.0
-        # else: r = 1.0 / ( curv*6.28 ) #radius of curvature
-
-        # #adaptive controller
-        # curv100 = 100 * curv
-        # # big curvature, pure pursuit is too aggressive
-        # if 0.7 < np.abs(curv100) < 2.0:
-        #     # print(f'HIGH CURVATURE: {curv100}')
-        #     # k2 = 5.0
-        #     # k3 = 5.0
-        #     k2 = self.k2
-        #     k3 = self.k3
-        # else:
         k2 = self.k2
         k3 = self.k3
 
@@ -95,7 +80,6 @@ class Controller():
         d = self.dist_point_ahead
         delta = np.arctan((2*L*np.sin(alpha))/d)
         proportional_term = k3 * delta
-        # print(f'proportional term: {np.rad2deg(proportional_term):.2f}')
 
         # derivative term
         k3D = self.k3D
@@ -105,7 +89,6 @@ class Controller():
         diff3 = (delta - self.prev_delta) / dt
         self.prev_delta = delta
         derivative_term = k3D * diff3
-        # print(f'derivative term: {np.rad2deg(derivative_term):.2f}')
 
         # feedforward term
         # 0.2 #higher for high speeds
@@ -186,7 +169,6 @@ class Controller():
         # add sequ of points ahead
         for i in range(NUM_POINTS):
             reg_label.append(self.seq_yaws_ahead[i])
-        # np_arr = np.array(reg_label)
         # append to file
         with open(self.folder+"/regression_labels.csv", "a") as f:
             for i in range(len(reg_label)-1):
@@ -241,7 +223,6 @@ class Controller():
                                                  NOISE_RESET_STD,
                                                  NOISE_RESET_MEAN +
                                                  NOISE_RESET_STD)
-            # print(f"noise: {self.noise}")
         self.cnt += 1
         return self.noise
 

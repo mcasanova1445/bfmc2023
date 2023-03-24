@@ -9,8 +9,6 @@ def diff_angle(angle1, angle2):
     return np.arctan2(np.sin(angle1-angle2), np.cos(angle1-angle2))
 
 
-# const_simple = 196.5
-# const_med = 14164/15.0
 const_verysmall = 3541/15.0
 M_R2L = np.array([[1.0, 0.0], [0.0, -1.0]])
 T_R2L = np.array([0, 15.0])
@@ -124,7 +122,6 @@ def project_onto_frame(frame, car, points, align_to_car=True,
     # project the points onto the camera frame
     proj_points = np.array([[-p[1]/p[0], -p[2]/p[0]] for p in rotated_points])
     # convert to pixel coordinates
-    # proj_points = 490*proj_points + np.array([320, 240])  # 640x480
     proj_points = 240*proj_points + np.array([320//2, 240//2])  # 320x240
     # draw the points
     for i in range(proj_points.shape[0]):
@@ -189,27 +186,6 @@ def draw_bounding_box(frame, bounding_box, color=(0, 0, 255)):
 
 
 def get_curvature(points, v_des=0.0):
-    # OLD VERSION
-    # # calculate curvature
-    # local_traj = points
-    # #get length
-    # path_length = 0
-    # for i in range(len(points)-1):
-    #     x1,y1 = points[i]
-    #     x2,y2 = points[i+1]
-    #     path_length += np.hypot(x2-x1,y2-y1)
-    # #time
-    # tot_time = path_length / v_des
-    # local_time = np.linspace(0, tot_time, len(local_traj))
-    # dx_dt = np.gradient(local_traj[:,0], local_time)
-    # dy_dt = np.gradient(local_traj[:,1], local_time)
-    # dp_dt = np.gradient(local_traj, local_time, axis=0)
-    # v = np.linalg.norm(dp_dt, axis=1)
-    # ddx_dt = np.gradient(dx_dt, local_time)
-    # ddy_dt = np.gradient(dy_dt, local_time)
-    # curv = (dx_dt*ddy_dt-dy_dt*ddx_dt) / np.power(v,1.5)
-    # avg_curv = np.mean(curv)
-    # return avg_curv
     diff = points[1:] - points[:-1]
     distances = np.linalg.norm(diff, axis=1)
     d = np.mean(distances)
@@ -268,7 +244,6 @@ def project_curvature(frame, car, curv):
     num_points = 20
     # multiply by constant, to be tuned
     curv = curv * 1.0  # 30.
-    # curv = curv * 30 #30.
     # get radius from curvature
     r = 1. / curv
     print("r: {}".format(r))
@@ -286,7 +261,6 @@ def project_curvature(frame, car, curv):
     if proj_points is not None:
         # convert proj to int32
         proj_points = proj_points.astype(np.int32)
-        # print(proj_points)
         cv.polylines(frame, [proj_points], False, color, 2)
     return r
 
@@ -310,7 +284,6 @@ def project_stopline(frame, car, stopline_x, stopline_y,
                                             points=points,
                                             align_to_car=False,
                                             color=color)
-    # frame = cv.polylines(frame, [proj_points], False, color, 2)
     return frame, proj_points
 
 
@@ -375,8 +348,6 @@ def show_car(track, car, brain, show=True):
         if len(brain.path_planner.path) > 0:
             cv.circle(track1, mR2pix(brain.path_planner.path[int(
                 brain.car_dist_on_path*100)]), 10, (150, 50, 255), 3)
-        # else:
-        #     print('No path')
         cv.imshow('Map', track1)
         cv.waitKey(1)
 
@@ -384,11 +355,4 @@ def show_car(track, car, brain, show=True):
 def show_camera(car, brain, show=True):
     if show:
         frame = car.frame.copy()
-        # if brain.stop_line_distance_median is not None:
-        #     dist = brain.stop_line_distance_median \
-        #             - car.encoder_distance + 0.1
-        #     angle_to_stopline = diff_angle(car.yaw,
-        #                                    get_yaw_closest_axis(car.yaw))
-        #     frame, _ = project_stopline(frame, car, dist,
-        #                                 angle_to_stopline, color=(0, 200, 0))
         cv.imshow('frame', frame)

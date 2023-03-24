@@ -119,10 +119,7 @@ class Detection:
                                             self.kernel_type + '_' +
                                             str(self.no_clusters) +
                                             '.pkl', 'rb'))
-        # self.sift = cv.SIFT_create()
         self.sift = cv.ORB_create(nfeatures=100)
-        # self.obstacles_probs_buffer = collections.deque(
-        #         maxlen=OBSTACLE_DETECTION_DEQUE_LENGTH)
         self.prediction = None
         self.conf = 0
 
@@ -139,21 +136,10 @@ class Detection:
         frame = cv.cvtColor(frame, cv.COLOR_BGR2GRAY)
         frame = frame[int(frame.shape[0]/3):, :]  # /3
         # keep the bottom 2/3 of the image
-        # blur
-        # worse than blur after 11,11 #with 15,15 is 1ms
-        # frame = cv.blur(frame, (15,15), 0)
         frame = cv.resize(frame, (2*IMG_SIZE[0], 2*IMG_SIZE[1]))
         frame = cv.Canny(frame, 100, 200)
         frame = cv.blur(frame, (3, 3), 0)  # worse than blur after 11,11
         frame = cv.resize(frame, IMG_SIZE)
-
-        # add noise 1.5 ms
-        # std = 50
-        # # std = np.random.randint(1, std)
-        # noisem = np.random.randint(0, std, frame.shape, dtype=np.uint8)
-        # frame = cv.subtract(frame, noisem)
-        # noisep = np.random.randint(0, std, frame.shape, dtype=np.uint8)
-        # frame = cv.add(frame, noisep)
 
         images = frame
 
@@ -166,8 +152,6 @@ class Detection:
             images = np.stack((frame, frame_flip), axis=0)
             blob = cv.dnn.blobFromImages(images, 1.0, IMG_SIZE, 0,
                                          swapRB=True, crop=False)
-        # assert blob.shape == (2, 1, IMG_SIZE[1], IMG_SIZE[0]), \
-        #     f"blob shape: {blob.shape}"
         self.lane_keeper.setInput(blob)
         out = -self.lane_keeper.forward()  # NOTE: MINUS SIGN IF OLD NET
         output = out[0]
@@ -188,15 +172,12 @@ class Detection:
         est_point_ahead = np.array([np.cos(e3)*d+0.2, np.sin(e3)*d])
         print(f"est_point_ahead: {est_point_ahead}")
 
-        # print(f"lane_detection: {1000*(time()-start_time):.2f} ms")
         lane_detection_time = 1000*(time()-start_time)
         self.avg_lane_detection_time = \
             (self.avg_lane_detection_time*self.lane_cnt +
              lane_detection_time)/(self.lane_cnt+1)
         self.lane_cnt += 1
         if show_ROI:
-            # edge
-            # frame = cv.Canny(frame, 150, 180)
             cv.imshow('lane_detection', frame)
             cv.waitKey(1)
         return e2, e3, est_point_ahead
@@ -214,21 +195,10 @@ class Detection:
         frame = cv.cvtColor(frame, cv.COLOR_BGR2GRAY)
         frame = frame[int(frame.shape[0]/3):, :]  # /3
         # keep the bottom 2/3 of the image
-        # blur
-        # worse than blur after 11,11 #with 15,15 is 1ms
-        # frame = cv.blur(frame, (15,15), 0)
         frame = cv.resize(frame, (2*IMG_SIZE[0], 2*IMG_SIZE[1]))
         frame = cv.Canny(frame, 100, 200)
         frame = cv.blur(frame, (3, 3), 0)  # worse than blur after 11,11
         frame = cv.resize(frame, IMG_SIZE)
-
-        # # add noise 1.5 ms
-        # std = 50
-        # # std = np.random.randint(1, std)
-        # noisem = np.random.randint(0, std, frame.shape, dtype=np.uint8)
-        # frame = cv.subtract(frame, noisem)
-        # noisep = np.random.randint(0, std, frame.shape, dtype=np.uint8)
-        # frame = cv.add(frame, noisep)
 
         images = frame
 
@@ -241,36 +211,28 @@ class Detection:
             images = np.stack((frame, frame_flip), axis=0)
             blob = cv.dnn.blobFromImages(images, 1.0, IMG_SIZE, 0,
                                          swapRB=True, crop=False)
-        # assert blob.shape == (2, 1, IMG_SIZE[1], IMG_SIZE[0]), \
-        #     f"blob shape: {blob.shape}"
         self.lane_keeper_ahead.setInput(blob)
         out = self.lane_keeper_ahead.forward()  # NOTE: MINUS SIGN IF OLD NET
         output = out[0]
         output_flipped = out[1] if not faster else None
 
-        # e2 = output[0]
         e3 = output[0]
 
         if not faster:
-            # e2_flipped = output_flipped[0]
             e3_flipped = output_flipped[0]
 
-            # e2 = (e2 - e2_flipped) / 2.0
             e3 = (e3 - e3_flipped) / 2.0
 
         # calculate estimated of thr point ahead to get visual feedback
         d = DISTANCE_POINT_AHEAD_AHEAD
         est_point_ahead = np.array([np.cos(e3)*d, np.sin(e3)*d])
 
-        # print(f"lane_detection: {1000*(time()-start_time):.2f} ms")
         lane_detection_time = 1000*(time()-start_time)
         self.avg_lane_detection_time = \
             (self.avg_lane_detection_time*self.lane_cnt +
                 lane_detection_time) / (self.lane_cnt+1)
         self.lane_cnt += 1
         if show_ROI:
-            # edge
-            # frame = cv.Canny(frame, 150, 180)
             cv.imshow('lane_detection', frame)
             cv.waitKey(1)
         return e3, est_point_ahead
@@ -283,38 +245,21 @@ class Detection:
         IMG_SIZE = (32, 32)  # match with trainer
         # convert to gray
         frame = cv.cvtColor(frame, cv.COLOR_BGR2GRAY)
-        # frame = frame[int(frame.shape[0]*(2/5)):,:]
         frame = frame[0:int(frame.shape[0]*(2/5)):, :]
         # keep the bottom 2/3 of the image
-        # blur
-        # worse than blur after 11,11 #with 15,15 is 1ms
-        # frame = cv.blur(frame, (15,15), 0)
         frame = cv.resize(frame, (2*IMG_SIZE[0], 2*IMG_SIZE[1]))
         frame = cv.Canny(frame, 100, 200)
-        # frame = cv.blur(frame, (3,3), 0) #worse than blur after 11,11
         frame = cv.blur(frame, (5, 5), 0)
         frame = cv.resize(frame, IMG_SIZE)
 
-        # # # add noise 1.5 ms
-        # std = 50
-        # # std = np.random.randint(1, std)
-        # noisem = np.random.randint(0, std, frame.shape, dtype=np.uint8)
-        # frame = cv.subtract(frame, noisem)
-        # noisep = np.random.randint(0, std, frame.shape, dtype=np.uint8)
-        # frame = cv.add(frame, noisep)
-
         blob = cv.dnn.blobFromImage(frame, 1.0, IMG_SIZE, 0, swapRB=True,
                                     crop=False)
-        # assert blob.shape == (1, 1, IMG_SIZE[1], IMG_SIZE[0]), \
-        #     f"blob shape: {blob.shape}"
         self.stop_line_estimator.setInput(blob)
         output = self.stop_line_estimator.forward()
         dist = output[0][0]
 
         self.est_dist_to_stop_line = dist
 
-        # return e2, e3, inv_dist, curv, est_point_ahead
-        # print(f"lane_detection: {1000*(time()-start_time):.2f} ms")
         stop_line_detection_time = 1000*(time()-start_time)
         self.avg_stop_line_detection_time = \
             (self.avg_stop_line_detection_time*self.lane_cnt +
@@ -337,26 +282,14 @@ class Detection:
         frame = cv.cvtColor(frame, cv.COLOR_BGR2GRAY)
         frame = frame[int(frame.shape[0]*(2/5)):, :]
         # keep the bottom 2/3 of the image
-        # blur
-        # worse than blur after 11,11 #with 15,15 is 1ms
         frame = cv.blur(frame, (9, 9), 0)
         frame = cv.resize(frame, (2*IMG_SIZE[0], 2*IMG_SIZE[1]))
         frame = cv.Canny(frame, 100, 200)
         frame = cv.blur(frame, (3, 3), 0)  # worse than blur after 11,11
         frame = cv.resize(frame, IMG_SIZE)
 
-        # # # add noise 1.5 ms
-        # std = 50
-        # # std = np.random.randint(1, std)
-        # noisem = np.random.randint(0, std, frame.shape, dtype=np.uint8)
-        # frame = cv.subtract(frame, noisem)
-        # noisep = np.random.randint(0, std, frame.shape, dtype=np.uint8)
-        # frame = cv.add(frame, noisep)
-
         blob = cv.dnn.blobFromImage(frame, 1.0, IMG_SIZE, 0, swapRB=True,
                                     crop=False)
-        # assert blob.shape == (1, 1, IMG_SIZE[1], IMG_SIZE[0]), \
-        #     f"blob shape: {blob.shape}"
         self.stop_line_estimator_adv.setInput(blob)
         output = self.stop_line_estimator_adv.forward()
         stopline_x = dist = output[0][0] + PREDICTION_OFFSET
@@ -364,8 +297,6 @@ class Detection:
         stopline_angle = output[0][2]
         self.est_dist_to_stop_line = dist
 
-        # return e2, e3, inv_dist, curv, est_point_ahead
-        # print(f"lane_detection: {1000*(time()-start_time):.2f} ms")
         stop_line_detection_time = 1000*(time()-start_time)
         self.avg_stop_line_detection_time = \
             (self.avg_stop_line_detection_time*self.lane_cnt +
@@ -407,7 +338,6 @@ class Detection:
         else:
             raise ValueError(f'return_size must be 2 or 3, \
                     but is {return_size}')
-        # centers = np.stack([centers_x, centers_y], axis=1)
         centers = []
         widths_idxs = []
         for s, i_s in enumerate(range(num_scales)):
@@ -427,13 +357,7 @@ class Detection:
                              centers_x[j] - tile_widths[s]//2:
                              centers_x[j] + tile_widths[s]//2].copy()
 
-                    # im = cv.resize(im, (2*return_size[0], 2*return_size[1]))
-                    # im = cv.blur(im, (3,3))
-                    # im = cv.Canny(im, 100, 200)
                     im = cv.resize(im, return_size)
-                    # im = cv.blur(im, (2,2))
-                    # bgr2hsv
-                    # im = cv.cvtColor(im, cv.COLOR_BGR2HSV)
 
                     imgs[idx] = im
                     centers.append([x+centers_x[j], y+centers_y[i]])
@@ -455,13 +379,13 @@ class Detection:
         img = Detection.automatic_brightness_and_contrast(img)
         img = cv.cvtColor(img, cv.COLOR_BGR2GRAY)
         img = img[TL[1]:BR[1], TL[0]:BR[0]]
-        # print(img.shape)
+
         if show_ROI:
             cv.imshow('ROI', img)
             Detection.draw_ROI(frame, TL, BR, show_rect=False, prediction=None,
                                conf=None, show_prediction=False)
             cv.waitKey(1)
-        # img = cv.resize(img,(40,30))
+
         ratio = 1
         img = cv.resize(img, None, fx=ratio, fy=ratio,
                         interpolation=cv.INTER_AREA)
@@ -479,10 +403,8 @@ class Detection:
                 cv.waitKey(1)
             if len(des) < 10:
                 print('No enougth descriptors')
-                # cv.destroyWindow('keypoints')
                 probs_array = np.zeros(len(signs_dict))
                 # the last element of the list of obstacles is no obstacles
-                # probability no obstacle = 1
                 probs_array[-1] = 1
             else:
                 im_hist = Detection.ImageHistogram(self.sign_kmean_model,
@@ -498,10 +420,8 @@ class Detection:
                     {nac.SIGN_NAMES[MAP_DICT_NAMES[np.argmax(probs_array)]]}')
         else:
             print('No descriptors')
-            # cv.destroyWindow('keypoints')
             probs_array = np.zeros(len(signs_dict))
             # the last element of the list of obstacles is no obstacles
-            # probability no obstacle = 1
             probs_array[-1] = 1
 
         # buffer of classification probabilities
@@ -514,7 +434,6 @@ class Detection:
         buffer_mean = buffer_mean.reshape(-1)
         pred_idx = np.argmax(buffer_mean)
         # most likely sign_prediction
-        # signs_dict[str(pred_idx)]
         new_prediction = nac.SIGN_NAMES[MAP_DICT_NAMES[pred_idx]]
         new_conf = buffer_mean[pred_idx]
         print('Prediction proposal:', new_prediction, int(100*new_conf))
@@ -657,44 +576,6 @@ class Detection:
             img = cv.resize(img, (160, 120))
             img = cv.cvtColor(img, cv.COLOR_BGR2GRAY)
             distance = distance*100
-            # if distance >= 50:
-            #     distance = 50
-            #     TL = distance_dict[str(distance)][0]
-            #     BR = distance_dict[str(distance)][1]
-            #     img = img[TL[1]:BR[1],TL[0]:BR[0]]
-            # elif distance < 50 and distance >= 40:
-            #     distance = 40
-            #     ratio = 0.9
-            #     TL = distance_dict[str(distance)][0]
-            #     BR = distance_dict[str(distance)][1]
-            #     img = img[TL[1]:BR[1],TL[0]:BR[0]]
-            #     img = cv.resize(img, None, fx = ratio, fy = ratio,
-            #                     interpolation = cv.INTER_AREA)
-
-            # elif distance < 40 and distance >= 30:
-            #     distance = 30
-            #     TL = distance_dict[str(distance)][0]
-            #     BR = distance_dict[str(distance)][1]
-            #     img = img[TL[1]:BR[1],TL[0]:BR[0]]
-            #     ratio = 0.7
-            #     img = cv.resize(img, None, fx=ratio, fy=ratio,
-            #                     interpolation = cv.INTER_AREA)
-            # #  distance < 30:
-            # else:
-            #     distance = 20
-            #     TL = distance_dict[str(distance)][0]
-            #     BR = distance_dict[str(distance)][1]
-            #     img = img[TL[1]:BR[1],TL[0]:BR[0]]
-            #     ratio = 0.6
-            #     img = cv.resize(img, None, fx = ratio, fy = ratio,
-            #                     interpolation = cv.INTER_AREA)
-            # if show_ROI:
-            #     Detection.draw_ROI(frame, TL, BR, show_rect = False,
-            #                        prediction = None, conf= None,
-            #                        show_prediction = False)
-            #     cv.imshow('ROI', img)
-            #     cv.imwrite(f'sd_{int(time()*1000)}.png', img)
-            #     cv.waitKey(1)
 
             kp, des = self.sift.detectAndCompute(img, None)  # des=descriptors
             if des is not None and len(des) >= 15:

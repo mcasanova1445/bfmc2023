@@ -36,8 +36,6 @@ class AutomobileEKF(EKF):
         # Analytical model
         self.xx = cas.MX.sym('x', dim_xx)
         self.uu = cas.MX.sym('u', dim_uu)
-        # x = self.xx[0]      # [m]   GPS:x
-        # y = self.xx[1]      # [m]   GPS:y
 
         # Input: [speed, steering angle]
         v = self.uu[0]      # [m/s] SPEED
@@ -88,7 +86,6 @@ class AutomobileEKF(EKF):
         # Jacobians
         # *******************************************
         F = np.array(self.F_x(self.x, u))   # State Jacobian
-        # V = np.array(self.F_u(self.x, u))   # Input Jacobian
 
         # *******************************************
         # Error covariance prediction

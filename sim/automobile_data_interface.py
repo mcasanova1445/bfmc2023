@@ -148,9 +148,7 @@ class Automobile_Data():
         self.lateral_sonar_distance = 3.0  # [m] SONAR: unfilt dist from lat
         self.filtered_lateral_sonar_distance = 3.0  # [m] SONAR:filt dist lat
         # CAMERA
-        # [ndarray] CAM:image of the camera #<++>
-        # self.frame = np.zeros((FRAME_WIDTH, FRAME_HEIGHT))
-        # [ndarray] CAM:image of the camera #<++>
+        # [ndarray] CAM:image of the camera
         self.frame = np.zeros((FRAME_WIDTH, FRAME_HEIGHT, 3), np.uint8)
         # CONTROL ACTION
         self.speed = 0.0            # [m/s]     MOTOR:speed
@@ -186,10 +184,6 @@ class Automobile_Data():
                 maxlen=BUFFER_PAST_MEASUREMENTS_LENGTH)
         self.past_yaws = deque(
                 maxlen=BUFFER_PAST_MEASUREMENTS_LENGTH)
-        # self.past_gps_increments_x = deque(
-        #         maxlen=BUFFER_PAST_MEASUREMENTS_LENGTH)
-        # self.past_gps_increments_y = deque(
-        #         maxlen=BUFFER_PAST_MEASUREMENTS_LENGTH)
         self.yaws_between_updates = deque(
                 maxlen=int(round(ENCODER_POS_FREQ/GPS_FREQ)))
 
@@ -271,18 +265,6 @@ class Automobile_Data():
         if self.new_gps_sample_arrived:
             self.last_gps_sample_time = time.time()
             self.new_gps_sample_arrived = False
-        # if (time.time() - self.last_gps_sample_time) > 0.8 and \
-        #         np.abs(self.filtered_encoder_velocity) > 0.1:
-        #     # too much time passed from previous gps pos
-        #     self.trust_gps = False
-        #     self.gps_cnt = 0
-        # yaw = self.yaw
-        # dx = signed_L * np.cos(yaw)
-        # dy = signed_L * np.sin(yaw)
-        # self.past_gps_increments_x.append(dx)
-        # self.past_gps_increments_y.append(dy)
-        # self.x_est += dx
-        # self.y_est += dy
 
     def encoder_velocity_callback(self, data) -> None:
         """Callback when an encoder velocity message is received
@@ -313,13 +295,10 @@ class Automobile_Data():
             curr_gps_dist = self.past_encoder_distances.popleft()
             # delayed yaw
             curr_yaw = np.median(np.array(self.yaws_between_updates))
-            # curr_gps_dist = self.encoder_distance  #istantaneous distance
-            # curr_yaw = self.yaw #istantaneous yaw
             dist = curr_gps_dist - self.prev_gps_dist
             velocity = dist / DT
             self.prev_gps_dist = curr_gps_dist
-            # if velocity > 0.001:
-            # # self.buffer_gps_positions_still_car = []
+
             # INPUT: [SPEED, STEER]
             u0 = velocity
             u1 = curr_yaw
@@ -331,13 +310,6 @@ class Automobile_Data():
             # PREDICT and UPDATE STEPS
             x_est, y_est = self.ekf.estimate_state(sampling_time=DT, input=u,
                                                    output=z)
-            # else: #car is still
-            #     self.buffer_gps_positions_still_car.append(
-            #         np.array([self.x, self.y]))
-            #     mean_pos = np.mean(self.buffer_gps_positions_still_car,
-            #                        axis=0)
-            #     x_est = mean_pos[0]
-            #     y_est = mean_pos[1]
             # check if x_est and y_est are valid
             p_ekf = np.array([x_est, y_est])  # estimate of the kalmann filter
             p_gps = np.array([self.x, self.y])       # current gps position
@@ -356,8 +328,6 @@ class Automobile_Data():
                     self.trust_gps = True
             # update the estimated state, if gps is trusted
             if self.trust_gps:
-                # tot_delta_x = np.sum(self.past_gps_increments_x)
-                # tot_delta_y = np.sum(self.past_gps_increments_y)
                 self.x_est = x_est  # + tot_delta_x
                 self.y_est = y_est  # + tot_delta_y
 

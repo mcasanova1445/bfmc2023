@@ -128,9 +128,6 @@ class EnvironmentalData():
                                      Byte,
                                      self.semaphore_start_callback)
 
-        # I/O interface
-        # rospy.init_node('environmental_data', anonymous=False)
-
     # V2V CALLBACKS AND FUNCTIONS
     def v2v_callback(self, data) -> None:
         """Receive and store positions of other moving vehicles

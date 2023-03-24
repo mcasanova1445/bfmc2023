@@ -107,17 +107,6 @@ SIGN_NAMES = [PARK,
               CROSSWALK,
               ONE_WAY,
               NO_SIGN]
-# SIGN_NAMES = [PARK,
-#               CLOSED_ROAD,
-#               HW_EXIT,
-#               HW_ENTER,
-#               STOP,
-#               ROUNDABOUT,
-#               PRIORITY,
-#               CROSSWALK,
-#               ONE_WAY,
-#               NO_SIGN,
-#               TRAFFIC_LIGHT]
 
 # obstacles
 CAR = 'car'

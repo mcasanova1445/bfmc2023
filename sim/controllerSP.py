@@ -3,7 +3,6 @@ import numpy as np
 
 import time
 from scipy.signal import butter, lfilter, lfilter_zi
-# from pyclothoids import Clothoid
 from scipy.interpolate import CubicSpline
 
 POINT_AHEAD_CM_SHORT = 35   # [points,cm] distance of the short point ahead
@@ -63,8 +62,6 @@ class ControllerSpeed():
         self.prev_time = None
 
         # ----- PURE PURSUIT -----
-        # self.Ki = 0.0
-
         self.Kpp_straight = 2.0
         self.Kpp_curve = 3.0
 
@@ -85,36 +82,12 @@ class ControllerSpeed():
                                              [self.desired_speed,
                                               self.curve_speed],
                                              bc_type=((1, 0.0), (1, 0.0)))
-        # self.speed_profile_rate_s2c = CubicSpline([self.alpha_rate_straight,
-        #                                            self.alpha_rate_curve],
-        #                                      [self.desired_speed,
-        #                                       self.curve_speed],
-        #                                      bc_type=((1, 0.0), (1, 0.0))
-        #                                     )
         self.gain_profile_s2c = CubicSpline([self.alpha_straight,
                                              self.alpha_curve],
                                             [self.Kpp_straight,
                                              self.Kpp_curve],
                                             bc_type=((1, 0.0), (1, 0.0))
                                             )
-        # self.gain_profile_rate_s2c = CubicSpline([self.alpha_rate_straight,
-        #                                           self.alpha_rate_curve],
-        #                                          [self.Kpp_straight,
-        #                                           self.Kpp_curve],
-        #                                          bc_type=((1, 0.0), (1, 0.0))
-        #                                          )
-
-        # x_new = np.linspace(self.alpha_straight, self.alpha_curve,100)
-        # y_new = self.speed_profile_s2c(x_new)
-        # x_neww = np.linspace(self.alpha_straight, self.alpha_curve,100)
-        # y_neww = self.gain_profile_s2c(x_neww)
-        # plt.figure(figsize = (10,8))
-        # plt.plot(x_new, y_new, 'b')
-        # plt.plot(x_neww, y_neww, 'b')
-        # plt.title('Cubic Spline Interpolation')
-        # plt.xlabel('x')
-        # plt.ylabel('y')
-        # plt.show()
 
         self.ey = 0.0
         self.ey_int = 0.0
@@ -124,12 +97,6 @@ class ControllerSpeed():
 
         self.alpha_long_prev = 0.0
         self.alpha_long_rate = 0.0
-
-        # self.alpha_filt = 0.0   # y[i] and y[i-1]
-        # self.alpha_filter = Filter(type='low', normal_cutoff=0.1, order=2)
-
-        # self.e_filt = 0.0
-        # self.e_filter = Filter(type='high', normal_cutoff=0.2, order=3)
 
     def get_control_speed(self, short_e2, short_e3, long_e3):
         curr_time = time.time()
@@ -144,29 +111,6 @@ class ControllerSpeed():
             self.alpha_short = -short_e3    # heading error - short
             self.alpha_long = -long_e3      # heading error - long
             self.alpha_long_rate = (self.alpha_long - self.alpha_long_prev)/DT
-            # ----- FILTER MEASUREMENTS -----
-            # self.alpha_filt = self.alpha_filter.filter([self.alpha_long])
-            # self.e_filt = self.e_filter.filter([self.e])
-
-            # ----- LONGITUDINAL -----
-            # output_speed = 0.1 + np.exp(
-            #       -abs(self.alpha_long)/np.deg2rad(17)) * (desired_speed-0.1)
-            # output_speed = desired_speed
-            # ----- LATERAL -----
-            # # ----- Integral -----
-            # self.ey_int += self.ey
-            # delta_i = self.Ki * self.ey_int
-            # ----- Pure Pursuit -----
-            # SIMPLE - SHORT
-            # delta_pp = self.Kpp_short * np.arctan(
-            #       (2*WB*np.sin(self.alpha_short))/(self.L_short))
-            # SIMPLE - LONG - MIT
-            # delta_pp = self.Kpp_long * np.arctan(
-            #       (WB*np.sin(self.alpha_long)) /
-            #       (self.L_long/2 + 0.5*WB*np.cos(self.alpha_long)) )
-            # SIMPLE - LONG
-            # delta_pp = self.Kpp_long * np.arctan(
-            #       (2*WB*np.sin(self.alpha_long))/(self.L_long))
 
             # ----- VARIABLE GAIN and SPEED PROFILES -----
             if abs(self.alpha_long) < self.alpha_straight:
@@ -179,19 +123,6 @@ class ControllerSpeed():
             else:
                 output_speed = self.curve_speed
                 gain = self.Kpp_curve
-
-            # if abs(self.alpha_long_rate) < self.alpha_rate_straight:
-            #     # gain=0.8*self.Kpp_long
-            #     output_speed = self.desired_speed
-            #     grain = self.Kpp_straight
-            # elif self.alpha_rate_straight <= abs(self.alpha_long_rate) < \
-            #         self.alpha_rate_curve:
-            #     output_speed = self.speed_profile_rate_s2c(
-            #       abs(self.alpha_long_rate))
-            #     gain = self.gain_profile_rate_s2c(abs(self.alpha_long_rate))
-            # else:
-            #     output_speed = self.curve_speed
-            #     gain = self.Kpp_curve
 
             delta_pp = gain * np.arctan(
                     (2*WB*np.sin(self.alpha_long))/(self.L_long)) + \
@@ -207,14 +138,5 @@ class ControllerSpeed():
 
             self.prev_time = curr_time
             self.alpha_long_prev = self.alpha_long
-
-            # os.system('cls' if os.name=='nt' else 'clear')
-            # print(f'DT is: {DT}')
-            # print(f'output_speed is: {output_speed}')
-            # print(f'output angle is: {np.rad2deg(output_angle)}')
-            # print(f'alpha_long is {np.rad2deg(self.alpha_long)}')
-            # print(f'alpha_short is {np.rad2deg(self.alpha_short)}')
-            # print(f'alpha_long_rate is {np.rad2deg(self.alpha_long_rate)}')
-            # print(f'alpha rate is : {np.rad2deg(alpha_rate)} rad/s')
 
         return output_speed, output_angle

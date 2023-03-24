@@ -1,10 +1,10 @@
 * TODO
 
-** Understand the code of the brain                                             :Miguel:Tomasso:
+** Understand the code of the brain                                             :Miguel:Tommaso:
 
 *** main_brain.py                                                               :Miguel:
 
-*** brain.py                                                                    :Tomasso:
+*** brain.py                                                                    :Tommaso:
 
 **** PathPlanning4.py                                                           :~:
 

@@ -103,12 +103,6 @@ class AutomobileDataPi(Automobile_Data):
             self.trig_estimation = trig_estimation
             print("ESTIMATION ENABLED")
 
-    # def camera_callback(self, data) -> None:
-    #     """Receive and store camera frame
-    #     :acts on: self.frame
-    #     """
-    #     self.frame = self.bridge.imgmsg_to_cv2(data, "bgr8")
-
     def center_sonar_callback(self, data) -> None:
         """Receive and store distance of an obstacle ahead in
         :acts on: self.sonar_distance, self.filtered_sonar_distance
@@ -158,9 +152,6 @@ class AutomobileDataPi(Automobile_Data):
             self.filtered_sonar_distance = min(
                     self.filtered_right_sonar_distance,
                     self.filtered_center_sonar_distance)
-        # UNCOMMENT AND REMOVE LEFT AND RIGHT SONARS
-        # self.sonar_distance = self.center_sonar_distance
-        # self.filtered_sonar_distance = self.filtered_center_sonar_distance
 
     def lateral_sonar_callback(self, data) -> None:
         """Receive and store distance of an obstacle ahead in
@@ -178,10 +169,6 @@ class AutomobileDataPi(Automobile_Data):
         """
         pL = np.array([data.posA, data.posB])
         pR = hf.mL2mR(pL)
-        # print(f'PL = {pL}')
-        # print(f'PR = {pR}')
-        # self.x = pR[0]
-        # self.y = pR[1]
         tmp_x = pR[0] - self.WB/2*np.cos(self.yaw)
         tmp_y = pR[1] - self.WB/2*np.sin(self.yaw)
         self.x_buffer.append(tmp_x)
@@ -190,7 +177,6 @@ class AutomobileDataPi(Automobile_Data):
         self.y = np.mean(self.y_buffer)
         self.x_est = self.x
         self.y_est = self.y
-        # self.update_estimated_state()
 
     def imu_callback(self, data) -> None:
         """Receive and store rotation from IMU
@@ -202,8 +188,6 @@ class AutomobileDataPi(Automobile_Data):
         self.roll = np.deg2rad(data.roll)
         self.pitch = np.deg2rad(data.pitch)
         self.yaw = hf.diff_angle(np.deg2rad(data.yaw) + self.yaw_offset, 0.0)
-
-        # self.yaw = hf.diff_angle(self.yaw, self.yaw_offset)
 
         self.roll_deg = np.rad2deg(self.roll)
         self.pitch_deg = np.rad2deg(self.pitch)

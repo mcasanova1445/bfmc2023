@@ -2,15 +2,6 @@ import cv2  # Import the OpenCV library to enable computer vision
 import numpy as np  # Import the NumPy scientific computing library
 import matplotlib.pyplot as plt  # Used for plotting and error checking
 
-# Author: Addison Sears-Collins
-# https://automaticaddison.com
-# Description: Implementation of the Lane class
-
-# filename = 'advancestopline.jpg'
-# filename = 'Stop-Bars-and-Center-Lines.jpg'
-# filename = 'advance-yield.jpg'
-# filename = 'stop_lines.jpg'
-# filename = 'test.jpg'
 filename = '1.jpg'
 
 
@@ -58,12 +49,6 @@ class StopLine:
             # Top-right corner (self.width - self.width//12, 2*self.height//3)
             (self.width - self.width//12, 3*self.height//5)
         ])
-        # self.roi_points = np.float32([
-        #   (0, 2*self.height//3), # Top-left corner
-        #   (0, self.height), # Bottom-left corner
-        #   (self.width, self.height), # Bottom-right corner
-        #   (self.width, 2*self.height//3) # Top-right corner
-        # ])
 
         # The desired corner locations  of the region of interest
         # after we perform perspective transformation.
@@ -226,8 +211,6 @@ class StopLine:
             # Add color to the left line pixels and right line pixels
             out_img[nonzeroy[stop_line_inds],
                     nonzerox[stop_line_inds]] = [255, 0, 0]
-            # out_img[nonzeroy[right_lane_inds],
-            #         nonzerox[right_lane_inds]] = [0, 0, 255]
 
             # Plot the figure with the sliding windows
             figure, (ax1, ax2, ax3) = plt.subplots(3, 1)  # 3 rows, 1 column
@@ -501,11 +484,6 @@ def detect_angle(original_frame=None, plot=False):
 
     # extract lines
     img = warped_frame
-    # # img = cv2.resize(img, (100,100))
-    # print(img.shape)
-    # cv2.namedWindow('lines', cv2.WINDOW_NORMAL)
-    # cv2.imshow('lines',img)
-    # cv2.waitKey(0)
     lines = cv2.HoughLinesP(img, rho=1, theta=np.pi/180,
                             threshold=30, minLineLength=80, maxLineGap=5)
     angles = []

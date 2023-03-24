@@ -124,19 +124,8 @@ class AutomobileDataSimulator(Automobile_Data):
         """Receive and store global coordinates from GPS
         :acts on: self.x, self.y
         """
-        # pL = np.array([data.posA, data.posB])
-        # pR = hf.mL2mR(pL)
-        # self.x = pR[0]
-        # self.y = pR[1]
-        # self.x = pR[0] - self.WB/2*np.cos(self.yaw)
-        # self.y = pR[1] - self.WB/2*np.sin(self.yaw)
-        # self.update_estimated_state()
         pL = np.array([data.posA, data.posB])
         pR = hf.mL2mR(pL)
-        # print(f'PL = {pL}')
-        # print(f'PR = {pR}')
-        # self.x = pR[0]
-        # self.y = pR[1]
         tmp_x = pR[0] - self.WB/2*np.cos(self.yaw)
         tmp_y = pR[1] - self.WB/2*np.sin(self.yaw)
         self.x_buffer.append(tmp_x)
@@ -217,7 +206,6 @@ class AutomobileDataSimulator(Automobile_Data):
             return
         self.curr_steer += incr
         self.pub_steer(self.curr_steer)
-        # print(F'CURRENT STEER: {self.curr_steer:.1f}')
 
     def encoder_velocity_callback(self, data) -> None:
         """Callback when an encoder velocity message is received
@@ -249,7 +237,6 @@ class AutomobileDataSimulator(Automobile_Data):
             self.steer_deque.append((angle, curr_time))
         else:
             print('Missed steer command...')
-        # self.target_steer = angle #self.steer is updated in the callback
 
     def drive_distance(self, dist=0.0):
         """Drive the car a given distance forward or backward
@@ -266,8 +253,6 @@ class AutomobileDataSimulator(Automobile_Data):
         max_speed = 0.2
         if not self.arrived_at_dist:
             dist_error = self.target_dist - self.encoder_distance
-            # print(F'DISTANCE ERROR: {dist_error:.2f}, arrrived at dist: \
-            #        {self.arrived_at_dist}')
             self.pub_speed(min(Kp * dist_error, max_speed))
             if np.abs(dist_error) < 0.01:
                 self.arrived_at_dist = True

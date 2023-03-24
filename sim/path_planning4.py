@@ -220,11 +220,6 @@ class PathPlanning():
 
     def compute_route_list(self):
         ''' Augments the route stored in self.route_graph'''
-        # print("source=",source)
-        # print("target=",target)
-        # print("edges=",self.route_graph.edges.data())
-        # print("nodes=",self.route_graph.nodes.data())
-        # print(self.route_graph)
 
         curr_node = self.source
         prev_node = curr_node
@@ -233,9 +228,6 @@ class PathPlanning():
         # reset route list
         self.route_list = []
 
-        # print("curr_node",curr_node)
-        # print("prev_node",prev_node)
-        # print("next_node",next_node)
         self.navigator.append("go straight")
         while curr_node != self.target:
             pp = self.get_coord(prev_node)
@@ -245,22 +237,10 @@ class PathPlanning():
             pn = self.get_coord(next_node)
             xn, yn = pn[0], pn[1]
 
-            # print("from",curr_node,"(",xc,yc,")"," to ",
-            #       next_node,"(",xn,yn,")")
-            # print("edge: ",self.route_graph.get_edge_data(curr_node,
-            #                                               next_node))
-            # print("prev_node is",prev_node,"(",xp,yp,")")
-            # print("*************************\n")
-
-            # curr_is_junction = curr_node in \
-            #         self.intersection_cen  # len(adj_nodes) > 1
-            # len(next_adj_nodes) > 1
             next_is_intersection = next_node in self.intersection_cen
-            # len(prev_adj_nodes) > 1
             prev_is_intersection = prev_node in self.intersection_cen
             next_is_roundabout_enter = next_node in self.ra_enter
-            # curr_in_roundabout = curr_node in self.ra
-            # print(f"CURR: {curr_node}, NEXT: {next_node}, PREV: {prev_node}")
+
             # ****** ROUNDABOUT NAVIGATION ******
             if next_is_roundabout_enter:
                 if curr_node == "342":
@@ -357,14 +337,12 @@ class PathPlanning():
         self.compute_route_list()
 
         # remove duplicates
-        # prev_x, prev_y, prev_yaw = 0, 0, 0
         prev_x, prev_y = 0, 0
         for i, (x, y, yaw) in enumerate(self.route_list):
             if np.linalg.norm(np.array([x, y]) - np.array([prev_x, prev_y])) \
                     < 0.001:
                 # remove element from list
                 self.route_list.pop(i)
-            # prev_x, prev_y, prev_yaw = x, y, yaw
             prev_x, prev_y = x, y
 
         # interpolate the route of nodes
@@ -444,9 +422,6 @@ class PathPlanning():
         for i in range(len(path_event_points)):
             t = self.path_event_types[i]
             if t.startswith('intersection') or t.startswith('roundabout'):
-                # print(f'local_idx = {local_idx} -- i = {i} -- \
-                #       {self.path_event_points_idx[i]} -- \
-                #       {exit_points_idx[local_idx]}')
                 assert len(self.path) > 0
                 end_idx = min(exit_points_idx[local_idx]+10, len(self.path))
                 path_ahead = self.path[self.path_event_points_idx[i]:end_idx]
@@ -468,11 +443,9 @@ class PathPlanning():
             else:
                 path_event_path_ahead.append(None)
 
-        # print(f'local_idx: {local_idx}')
         print("path_event_points_idx: ", self.path_event_points_distances)
         print("path_event_points: ", self.path_event_points)
         print("path_event_types: ", self.path_event_types)
-        # sleep(5.0)
 
         events = list(zip(self.path_event_types,
                           self.path_event_points_distances,
@@ -580,8 +553,6 @@ class PathPlanning():
             thc = np.deg2rad(thc)
             thn = np.deg2rad(thn)
 
-            # print("from (",xc,yc,thc,") to (",xn,yn,thn,")\n")
-
             # Clothoid interpolation
             [X, Y] = PathPlanning.compute_path(xc, yc, thc, xn,
                                                yn, thn, step_length)
@@ -614,13 +585,6 @@ class PathPlanning():
             # add node number
             cv.putText(self.map, str(node), hf.mR2pix(p),
                        cv.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
-
-        # draw edges
-        # for edge in self.list_of_edges:
-        #     p1 = self.get_coord(edge[0])
-        #     p2 = self.get_coord(edge[1])
-        #     # cv.line(self.map, hf.mR2pix(p1),
-        #     #         hf.mR2pix(p2), (0, 255, 255), 2)
 
         # draw all points in given path
         for point in self.route_list:

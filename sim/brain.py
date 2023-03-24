@@ -23,12 +23,12 @@ import helper_functions as hf
 SHOW_IMGS = False
 
 END_NODE = 85
-# CHECKPOINTS = [299,275] #roundabout
-# CHECKPOINTS = [86,99,116] #left right left right
-# complete track#[86,430,193,141,346,85] #complete track
+# CHECKPOINTS = [299, 275] #roundabout
+# CHECKPOINTS = [86, 99, 116] #left right left right
+# complete track#[86, 430, 193, 141, 346, 85] #complete track
 CHECKPOINTS = [86, 430, 193, 141, 346, 85]  # complete track
 # CHECKPOINTS = [86, 255, 110, 346, END_NODE]
-# CHECKPOINTS = [86,235,END_NODE]
+# CHECKPOINTS = [86, 235, END_NODE]
 SPEED_CHALLENGE = False
 
 ALWAYS_USE_VISION_FOR_STOPLINES = True
@@ -307,30 +307,25 @@ MAX_ERROR_ON_LOCAL_DIST = 0.05  # [m] max error on the local distance
 # =========================== BRAIN ============================
 # ==============================================================
 class Brain:
-    def __init__(self, car, controller, controller_sp, env, detection,
-                 path_planner, checkpoints=None, desired_speed=0.3,
+    def __init__(self,
+                 car: Automobile_Data,
+                 controller: Controller,
+                 controller_sp: ControllerSpeed,
+                 env: EnvironmentalData,
+                 detection: Detection,
+                 path_planner: PathPlanning,
+                 checkpoints=None,
+                 desired_speed=0.3,
                  debug=True):
         print("Initialize brain")
-        # not needed, just to import he methods in visual studio
-        # self.car = Automobile_Data()
         self.car = car
-        assert isinstance(self.car, Automobile_Data)
-        self.controller = Controller(training=False)  # again, not needed
         self.controller = controller
-        self.controller_sp = ControllerSpeed()  # again, not needed
         self.controller_sp = controller_sp
-        assert isinstance(self.controller, Controller)
-        self.detect = Detection()  # again, not needed
         self.detect = detection
-        assert isinstance(self.detect, Detection)
-        self.path_planner = PathPlanning(None)
         self.path_planner = path_planner
-        assert isinstance(self.path_planner, PathPlanning)
-        self.env = EnvironmentalData()  # again, not needed
         self.env = env
 
         # navigation instruction is a list of tuples:
-        # ()
         self.navigation_instructions = []
         # events are an ordered list of tuples:
         # (type , distance from start, x y position)
@@ -457,7 +452,6 @@ class Brain:
                 break
             sleep(0.1)
 
-        # self.switch_to_state(DOING_NOTHING)
         self.switch_to_state(nac.START_STATE)
 
     # =============== STATES =============== #
@@ -571,7 +565,6 @@ Starting from the first checkpoint')
             print(f'Approx dist from parking: {approx_dist_from_parking}')
             # we are reasonably close to the parking spot
             if approx_dist_from_parking < PARKING_DISTANCE_SLOW_DOWN_THRESHOLD:
-                # self.activate_routines([FOLLOW_LANE, SLOW_DOWN])
                 self.car.drive_speed(0.0)
                 sleep(SLEEP_AFTER_STOPPING)
                 self.switch_to_state(nac.PARKING)
@@ -779,8 +772,6 @@ UNKNOWN EVENT AS NEXT EVENT')
                     ALWAYS_USE_VISION_FOR_STOPLINES:
                 USE_PRECISE_LOCATION_AND_YAW = False
                 point_car_est = np.array([self.car.x_est, self.car.y_est])
-                # point_car_path = self.path_planner.path[int(
-                #     round(self.car_dist_on_path*100))]
 
                 if USE_PRECISE_LOCATION_AND_YAW:
                     angle = self.car.yaw
@@ -789,18 +780,7 @@ UNKNOWN EVENT AS NEXT EVENT')
                     car_position_slf = point_car_est - stop_line_position
                     car_position_slf = car_position_slf @ rot_matrix
                 else:
-                    # point_ahead = self.path_planner.path[int(
-                    #     round(self.car_dist_on_path*100+10))]
-                    # point_behind = self.path_planner.path[int(
-                    #     round(self.car_dist_on_path*100-10))]
-                    # yaw_path = np.arctan2(point_ahead[1]-point_behind[1],
-                    #                       point_ahead[0]-point_behind[0])
-                    # yaw_error_path = np.arctan2(
-                    #         point_car_est[1]-point_car_path[1],
-                    #         point_car_est[0]-point_car_path[0])
-                    # sign = np.sign(hf.diff_angle(yaw_path, yaw_error_path))
                     x_dist = self.next_event.dist - self.car_dist_on_path
-                    # sign*norm(point_car_est-point_car_path)
                     y_dist = 0.0
                     car_position_slf = -np.array([x_dist, y_dist])
                 print('Car position in stop line frame: ', car_position_slf)
@@ -831,9 +811,6 @@ simple net estimation')
                     else:
                         d = 0.0
 
-                # -np.array([+d+0.38, +e2])
-                # -np.array([+d+0.3+0.15, +e2])
-                # np.array([+d+0.2, -e2])
                 car_position_slf = -np.array([+d+0.33, +e2])
 
             # get orientation of the car in the stop line frame
@@ -910,10 +887,7 @@ better aligned, alpha = {alpha}'
                           30, (0, 255, 0), 5)
                 cv.imshow('Path', self.path_planner.map)
                 cv.waitKey(1)
-                # debug
-                # self.car.drive_speed(0.0)
-                # sleep(SLEEP_AFTER_STOPPING)
-                # sleep(1.0)
+
                 cv.namedWindow('local_path', cv.WINDOW_NORMAL)
                 local_map_img = np.zeros_like(self.path_planner.map)
                 h = local_map_img.shape[0]
@@ -944,7 +918,6 @@ better aligned, alpha = {alpha}'
         dist_path = np.abs(dist_path - D)
         # get idx of point ahead
         idx_point_ahead = np.argmin(dist_path) + idx_car_on_path
-        # idx_point_ahead = int(100*self.car.dist_loc) # m -> cm -> idx
         print(f'idx_point_ahead: {idx_point_ahead} / {len(local_path_cf)}')
 
         rot_matrix = np.array([[np.cos(self.car.yaw_loc),
@@ -1030,8 +1003,6 @@ better aligned, alpha = {alpha}'
             dist_to_keep = dist_ahead - PEDESTRIAN_CONTROL_DISTANCE
             print('dist_ahead: ', dist_ahead)
             print(f'dist_to_keep: {dist_to_keep}')
-            # self.car.drive_distance(dist_to_keep) #go to a safe dist
-            # from the pedestrian and w8 there
             # last time I saw the pedestrian, initiliaze it
             self.curr_state.var1 = time()
             self.curr_state.just_switched = False
@@ -1142,9 +1113,6 @@ better aligned, alpha = {alpha}'
         if self.curr_state.just_switched:
             self.curr_state.var1 = (OT_SWITCHING_LANE, True)
             self.curr_state.var2 = self.car.encoder_distance
-            # NO need to publish a moving car
-            # self.env.publish_obstacle(STATIC_CAR_ON_ROAD, self.car.x_est,
-            #                           self.car.y_est)
             self.curr_state.just_switched = False
         sub_state, just_sub_switched = self.curr_state.var1
         dist_prev_manouver = self.curr_state.var2
@@ -1329,7 +1297,6 @@ expected parking spot position!')
                     # at least once. We will use local pos afterward
                     trusted_gps_once = False
                     self.curr_state.var2 = trusted_gps_once  # var2
-                    # just_changed = False
                     self.curr_state.var1 = (park_state, park_type, False)
                     self.car.reset_rel_pose()
 
@@ -1352,9 +1319,6 @@ waiting for GPS to be trusted for \
                     # we trusted gps once
                     self.curr_state.var2 = trusted_gps_once = True
                     car_est_pos = np.array([self.car.x_est, self.car.y_est])
-                    # DEBUG ONLY
-                    # car_est_pos = np.array(
-                    #         [self.car.x_true, self.car.y_true])
                     # one sample for every cm in the path
                     park_index_on_path = int(self.next_event.dist*100)
                     path_to_analyze = self.\
@@ -1629,8 +1593,6 @@ error:{overshoot_distance:.2f}')
 error:{overshoot_distance:.2f}')
 
         # # S parking manouver
-        # elif park_state == S_STEP1:
-        #     print('S-parking manouver step 1')
         elif park_state == S_STEP2:
             print('S-parking manouver step 2')
             print(f'Distance: {self.car.dist_loc:.2f}/{DIST_2S}')
@@ -1790,12 +1752,6 @@ error:{overshoot_distance:.2f}')
                     start_dist=OBSTACLE_IMGS_CAPTURE_START_DISTANCE -
                     OBSTACLE_IMGS_CAPTURE_STOP_DISTANCE)
             print(f'Captured {len(frames)} imgs, running classification...')
-            # distances = [OBSTACLE_IMGS_CAPTURE_STOP_DISTANCE +
-            #              DISTANCES_BETWEEN_FRAMES*(len(frames)-i)
-            #              for i in range(len(frames))]
-            # obstacle, conf = self.detect.classify_frontal_obstacle2(
-            #         frames, distances, show_ROI=SHOW_IMGS or True,
-            #         show_kp=SHOW_IMGS)
             # forcing the classification
             obstacle = None
             if self.conditions[nac.CAN_OVERTAKE]:
@@ -1983,8 +1939,6 @@ error:{overshoot_distance:.2f}')
 
     # STATE CHECKS
     def check_logic(self):
-        # if not self.conditions[CAR_ON_PATH]:
-        #     self.error(f'ERROR: CHECKS: Car is not on path')
         pass
 
     # UPDATE CONDITIONS

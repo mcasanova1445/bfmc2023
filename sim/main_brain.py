@@ -7,7 +7,6 @@ import cv2 as cv
 import rospy
 import numpy as np
 from time import sleep, time
-# from automobile_data import Automobile_Data
 if SIMULATOR_FLAG:
     from automobile_data_simulator import AutomobileDataSimulator
     import helper_functions as hf
@@ -147,7 +146,6 @@ if __name__ == '__main__':
             brain.run()
 
             # DEBUG INFO
-            # print(car)
             print(f'Lane detection time = \
                     {detect.avg_lane_detection_time:.1f} [ms]')
             # print(f'Sign detection time = \
