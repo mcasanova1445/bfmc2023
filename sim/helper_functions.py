@@ -356,3 +356,122 @@ def show_camera(car, brain, show=True):
     if show:
         frame = car.frame.copy()
         cv.imshow('frame', frame)
+
+
+def show_local_path_just_switched(brain,
+                                  alpha,
+                                  stop_line_yaw,
+                                  car_position_slf,
+                                  local_path_cf,
+                                  stop_line_position,
+                                  show=True):
+    if show:
+        img = brain.car.frame.copy()
+        # project the whole path (true)
+        img, _ = project_onto_frame(img, brain.car,
+                                    brain.path_planner.path,
+                                    align_to_car=True,
+                                    color=(0, 100, 0))
+        # project local path (estimated), it should match the true path
+        img, _ = project_onto_frame(img, brain.car, local_path_cf,
+                                    align_to_car=False)
+        cv.imshow('brain_debug', img)
+        cv.waitKey(1)
+        # var2 hold original position
+        brain.curr_state.var2 = np.array([brain.car.x_true,
+                                         brain.car.y_true])
+        true_start_pos_wf = brain.curr_state.var2
+
+        alpha = alpha + stop_line_yaw
+        rot_matrix = np.array([[np.cos(alpha), -np.sin(alpha)],
+                              [np.sin(alpha), np.cos(alpha)]])
+
+        est_car_pos_slf = car_position_slf
+        est_car_pos_slf_rot = est_car_pos_slf @ rot_matrix.T
+        est_car_pos_wf = est_car_pos_slf_rot + stop_line_position
+        cv.circle(brain.path_planner.map, mR2pix(est_car_pos_wf),
+                  25, (255, 0, 255), 5)
+        cv.circle(brain.path_planner.map, mR2pix(true_start_pos_wf),
+                  30, (0, 255, 0), 5)
+        cv.imshow('Path', brain.path_planner.map)
+        cv.waitKey(1)
+
+        cv.namedWindow('local_path', cv.WINDOW_NORMAL)
+        local_map_img = np.zeros_like(brain.path_planner.map)
+        h = local_map_img.shape[0]
+        w = local_map_img.shape[1]
+        local_map_img[w//2-2:w//2+2, :] = 255
+        local_map_img[:, h//2-2:h//2+2] = 255
+
+        cv.circle(local_map_img, (w//2, h//2), 50, (255, 0, 255), 5)
+        for i in range(len(local_path_cf)):
+            if (i % 3 == 0):
+                p = local_path_cf[i]
+                pix = mR2pix(p)
+                pix = (int(pix[0]+w//2), int(pix[1]-h//2))
+                cv.circle(local_map_img, pix, 10, (0, 150, 150), -1)
+        cv.imshow('local_path', local_map_img)
+        cv.waitKey(1)
+        brain.curr_state.var3 = local_map_img
+
+
+def show_local_path(brain, car_pos_loc, show=True):
+    if show:
+        local_map_img = brain.curr_state.var3
+        h = local_map_img.shape[0]
+        w = local_map_img.shape[1]
+        angle = brain.car.yaw_loc_o  # + brain.car.yaw_loc
+        rot_matrix_w = np.array([[np.cos(angle), -np.sin(angle)],
+                                 [np.sin(angle), np.cos(angle)]])
+        # show car position in the local frame (from the encoder)
+        cv.circle(local_map_img, (mR2pix(car_pos_loc)[0]+w//2,
+                                  mR2pix(car_pos_loc)[1]-h//2),
+                  5, (255, 0, 255), 2)
+        # show the true position to check if they match, translated
+        # wrt starting position into the local frame
+        true_start_pos_wf = brain.curr_state.var2
+        true_pos_loc = np.array([brain.car.x_true, brain.car.y_true]) - \
+            true_start_pos_wf
+        true_pos_loc = true_pos_loc @ rot_matrix_w
+        cv.circle(local_map_img, (mR2pix(true_pos_loc)[0]+w//2,
+                                  mR2pix(true_pos_loc)[1]-h//2),
+                  7, (0, 255, 0), 2)
+        cv.imshow('local_path', local_map_img)
+        true_start_pos_wf = brain.curr_state.var2
+        car_pos_loc_rot_wf = car_pos_loc @ rot_matrix_w.T
+        car_pos_wf = true_start_pos_wf + car_pos_loc_rot_wf
+        # show car position in wf (encoder)
+        cv.circle(brain.path_planner.map, mR2pix(car_pos_wf), 5,
+                  (255, 0, 255), 2)
+        # show the true position to check if they match
+        true_pos_wf = np.array([brain.car.x_true, brain.car.y_true])
+        cv.circle(brain.path_planner.map, mR2pix(true_pos_wf), 7,
+                  (0, 255, 0), 2)
+        cv.imshow('Path', brain.path_planner.map)
+        cv.waitKey(1)
+
+
+def show_brain_debug(brain, local_path_cf, point_ahead, show):
+    if show:
+        img = brain.car.frame.copy()
+        img, _ = project_onto_frame(img, brain.car, local_path_cf,
+                                    align_to_car=False)
+        img, _ = project_onto_frame(img, brain.car, point_ahead,
+                                    align_to_car=False,
+                                    color=(0, 0, 255))
+        cv.imshow('brain_debug', img)
+        cv.waitKey(1)
+
+
+def show_follow_lane(brain, point_ahead, show):
+    if show:
+        img = brain.car.frame.copy()
+        img, proj = project_onto_frame(img, brain.car, point_ahead,
+                                       align_to_car=False,
+                                       color=(255, 0, 255),
+                                       thickness=3)
+        img = cv.line(img, (int(proj[0]), int(proj[1])),
+                      (int(img.shape[1]/2), int(img.shape[0])),
+                      (255, 0, 255), 2)
+        cv.imshow('brain_debug', img)
+        cv.waitKey(1)

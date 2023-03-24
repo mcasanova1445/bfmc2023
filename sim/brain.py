@@ -857,54 +857,9 @@ better aligned, alpha = {alpha}'
             self.car.reset_rel_pose()
             self.curr_state.just_switched = False
 
-            if SHOW_IMGS:
-                img = self.car.frame.copy()
-                # project the whole path (true)
-                img, _ = hf.project_onto_frame(img, self.car,
-                                               self.path_planner.path,
-                                               align_to_car=True,
-                                               color=(0, 100, 0))
-                # project local path (estimated), it should match the true path
-                img, _ = hf.project_onto_frame(img, self.car, local_path_cf,
-                                               align_to_car=False)
-                cv.imshow('brain_debug', img)
-                cv.waitKey(1)
-                # var2 hold original position
-                self.curr_state.var2 = np.array([self.car.x_true,
-                                                 self.car.y_true])
-                true_start_pos_wf = self.curr_state.var2
-
-                alpha = alpha + stop_line_yaw
-                rot_matrix = np.array([[np.cos(alpha), -np.sin(alpha)],
-                                       [np.sin(alpha), np.cos(alpha)]])
-
-                est_car_pos_slf = car_position_slf
-                est_car_pos_slf_rot = est_car_pos_slf @ rot_matrix.T
-                est_car_pos_wf = est_car_pos_slf_rot + stop_line_position
-                cv.circle(self.path_planner.map, hf.mR2pix(est_car_pos_wf),
-                          25, (255, 0, 255), 5)
-                cv.circle(self.path_planner.map, hf.mR2pix(true_start_pos_wf),
-                          30, (0, 255, 0), 5)
-                cv.imshow('Path', self.path_planner.map)
-                cv.waitKey(1)
-
-                cv.namedWindow('local_path', cv.WINDOW_NORMAL)
-                local_map_img = np.zeros_like(self.path_planner.map)
-                h = local_map_img.shape[0]
-                w = local_map_img.shape[1]
-                local_map_img[w//2-2:w//2+2, :] = 255
-                local_map_img[:, h//2-2:h//2+2] = 255
-
-                cv.circle(local_map_img, (w//2, h//2), 50, (255, 0, 255), 5)
-                for i in range(len(local_path_cf)):
-                    if (i % 3 == 0):
-                        p = local_path_cf[i]
-                        pix = hf.mR2pix(p)
-                        pix = (int(pix[0]+w//2), int(pix[1]-h//2))
-                        cv.circle(local_map_img, pix, 10, (0, 150, 150), -1)
-                cv.imshow('local_path', local_map_img)
-                cv.waitKey(1)
-                self.curr_state.var3 = local_map_img
+            hf.show_local_path_just_switched(self, alpha, stop_line_yaw,
+                                             car_position_slf, local_path_cf,
+                                             stop_line_position, SHOW_IMGS)
 
         D = POINT_AHEAD_DISTANCE_LOCAL_TRACKING
         # track the local path using simple pure pursuit
@@ -926,39 +881,8 @@ better aligned, alpha = {alpha}'
                                 np.cos(self.car.yaw_loc)]])
         local_path_cf = local_path_cf @ rot_matrix
 
-        if SHOW_IMGS:
-            local_map_img = self.curr_state.var3
-            h = local_map_img.shape[0]
-            w = local_map_img.shape[1]
-            angle = self.car.yaw_loc_o  # + self.car.yaw_loc
-            rot_matrix_w = np.array([[np.cos(angle), -np.sin(angle)],
-                                     [np.sin(angle), np.cos(angle)]])
-            # show car position in the local frame (from the encoder)
-            cv.circle(local_map_img, (hf.mR2pix(car_pos_loc)[0]+w//2,
-                                      hf.mR2pix(car_pos_loc)[1]-h//2),
-                      5, (255, 0, 255), 2)
-            # show the true position to check if they match, translated
-            # wrt starting position into the local frame
-            true_start_pos_wf = self.curr_state.var2
-            true_pos_loc = np.array([self.car.x_true, self.car.y_true]) - \
-                true_start_pos_wf
-            true_pos_loc = true_pos_loc @ rot_matrix_w
-            cv.circle(local_map_img, (hf.mR2pix(true_pos_loc)[0]+w//2,
-                                      hf.mR2pix(true_pos_loc)[1]-h//2),
-                      7, (0, 255, 0), 2)
-            cv.imshow('local_path', local_map_img)
-            true_start_pos_wf = self.curr_state.var2
-            car_pos_loc_rot_wf = car_pos_loc @ rot_matrix_w.T
-            car_pos_wf = true_start_pos_wf + car_pos_loc_rot_wf
-            # show car position in wf (encoder)
-            cv.circle(self.path_planner.map, hf.mR2pix(car_pos_wf), 5,
-                      (255, 0, 255), 2)
-            # show the true position to check if they match
-            true_pos_wf = np.array([self.car.x_true, self.car.y_true])
-            cv.circle(self.path_planner.map, hf.mR2pix(true_pos_wf), 7,
-                      (0, 255, 0), 2)
-            cv.imshow('Path', self.path_planner.map)
-            cv.waitKey(1)
+        hf.show_local_path(self, car_pos_loc, SHOW_IMGS)
+
         # the local path is straight
         if np.abs(hf.get_curvature(local_path_cf)) < 0.1:
             print('straight')
@@ -972,15 +896,8 @@ better aligned, alpha = {alpha}'
             self.go_to_next_event()
         else:  # we are still on the path
             point_ahead = local_path_cf[idx_point_ahead]
-            if SHOW_IMGS:
-                img = self.car.frame.copy()
-                img, _ = hf.project_onto_frame(img, self.car, local_path_cf,
-                                               align_to_car=False)
-                img, _ = hf.project_onto_frame(img, self.car, point_ahead,
-                                               align_to_car=False,
-                                               color=(0, 0, 255))
-                cv.imshow('brain_debug', img)
-                cv.waitKey(1)
+            hf.show_brain_debug(self, local_path_cf, point_ahead, SHOW_IMGS)
+
             # k1,k2,k3,k3D
             gains = [0.0, .0, 1.2, 0.0]
             e2 = local_path_cf[idx_car_on_path][1]
@@ -1812,17 +1729,8 @@ error:{overshoot_distance:.2f}')
     def follow_lane(self):
         e2, e3, point_ahead = self.detect.detect_lane(self.car.frame,
                                                       SHOW_IMGS)
-        if SHOW_IMGS:
-            img = self.car.frame.copy()
-            img, proj = hf.project_onto_frame(img, self.car, point_ahead,
-                                              align_to_car=False,
-                                              color=(255, 0, 255),
-                                              thickness=3)
-            img = cv.line(img, (int(proj[0]), int(proj[1])),
-                          (int(img.shape[1]/2), int(img.shape[0])),
-                          (255, 0, 255), 2)
-            cv.imshow('brain_debug', img)
-            cv.waitKey(1)
+
+        hf.show_follow_lane(self, point_ahead, SHOW_IMGS)
         speed, angle_ref = self.controller.get_control(e2, e3, 0,
                                                        self.desired_speed)
         angle_ref = np.rad2deg(angle_ref)
