@@ -575,7 +575,7 @@ class Brain:                                                                    
             elif next_event_name == INTERSECTION_PRIORITY_EVENT:
                 self.switch_to_state(INTERSECTION_NAVIGATION)           ## Same state as next one, why separeted??           ######################################################################
             elif next_event_name == JUNCTION_EVENT:
-                self.switch_to_state(INTERSECTION_NAVIGATION) #TODO: careful with this                                              ###############################################################
+                self.switch_to_state(INTERSECTION_NAVIGATION) #TODO: careful with this                        why?                  ###############################################################
             elif next_event_name == ROUNDABOUT_EVENT:
                 self.switch_to_state(ROUNDABOUT_NAVIGATION)
             elif next_event_name == CROSSWALK_EVENT:
@@ -622,7 +622,7 @@ class Brain:                                                                    
             if self.conditions[TRUST_GPS] and not ALWAYS_USE_VISION_FOR_STOPLINES:
                 USE_PRECISE_LOCATION_AND_YAW = False
                 point_car_est = np.array([self.car.x_est, self.car.y_est])
-                point_car_path = self.path_planner.path[int(round(self.car_dist_on_path*100))]
+                point_car_path = self.path_planner.path[int(round(self.car_dist_on_path*100))]                                               # point_car_path not accessed?          ####################
 
                 if USE_PRECISE_LOCATION_AND_YAW:
                     angle = self.car.yaw
@@ -636,17 +636,17 @@ class Brain:                                                                    
                     # yaw_error_path = np.arctan2(point_car_est[1]-point_car_path[1], point_car_est[0]-point_car_path[0])
                     # sign = np.sign(diff_angle(yaw_path, yaw_error_path))
                     x_dist = self.next_event.dist - self.car_dist_on_path 
-                    y_dist = 0.0#sign*norm(point_car_est-point_car_path)
+                    y_dist = 0.0 #sign*norm(point_car_est-point_car_path)
                     car_position_slf = -np.array([x_dist, y_dist])
                 print('Car position in stop line frame: ', car_position_slf)
             else:
                 if USE_ADVANCED_NETWORK_FOR_STOPLINES:
-                    stopline_x, stopline_y, stopline_angle = self.detect.detect_stop_line2(self.car.frame, show_ROI=True)
+                    stopline_x, stopline_y, stopline_angle = self.detect.detect_stop_line2(self.car.frame, show_ROI=True)                   # stopline_x, stopline_angle not accessed?      ###############
                     e2 = stopline_y
                 else:
                     self.detect.detect_stop_line(self.car.frame, SHOW_IMGS)
                     e2, _, _ = self.detect.detect_lane(self.car.frame, SHOW_IMGS)
-                    e2 = 0.0 # NOTE e2 is usually bad
+                    e2 = 0.0                                                            # NOTE e2 is usually bad                                                    ########################################
                 if self.stop_line_distance_median is not None:
                     print('We HAVE the median, using median estimation')
                     print(len(self.routines[DETECT_STOP_LINE].var2))
@@ -658,20 +658,20 @@ class Brain:                                                                    
                         d = self.detect.est_dist_to_stop_line
                     else: d = 0.0
 
-                car_position_slf = -np.array([+d+0.33, +e2])#-np.array([+d+0.38, +e2])#-np.array([+d+0.3+0.15, +e2])#np.array([+d+0.2, -e2])
+                car_position_slf = -np.array([+d+0.33, +e2]) #-np.array([+d+0.38, +e2])#-np.array([+d+0.3+0.15, +e2])#np.array([+d+0.2, -e2])                       ## Check this   #########################
 
             # get orientation of the car in the stop line frame
             yaw_car = self.car.yaw
             yaw_mult_90 = get_yaw_closest_axis(yaw_car)
             alpha = diff_angle(yaw_car, yaw_mult_90) #get the difference from the closest multiple of 90deg
-            alpha_true = alpha
+            alpha_true = alpha                                                                                                                       ## alpha_true  is present only here      ###############
             print(f'alpha true: {np.rad2deg(alpha):.1f}')
             alpha = self.detect.detect_yaw_stopline(self.car.frame, SHOW_IMGS and False) * 0.8
             print(f'alpha est: {np.rad2deg(alpha):.1f}')
             if APPLY_YAW_CORRECTION:
-                closest_node, dist_node = self.path_planner.get_closest_node(np.array([self.car.x, self.car.y]))
+                closest_node, dist_node = self.path_planner.get_closest_node(np.array([self.car.x, self.car.y]))                                      ## dist_node is present only here     #################
                 if closest_node in self.path_planner.no_yaw_calibration_nodes:
-                    pass
+                    pass                                                                                                            ## not implemented yet???                               #################
                 else:
                     print(f'yaw = {np.rad2deg(self.car.yaw):.2f}')
                     print(f'est yaw = {np.rad2deg(self.next_event.yaw_stopline + alpha):.2f}')
@@ -681,8 +681,8 @@ class Brain:                                                                    
             assert abs(alpha) < np.pi/6, f'Car orientation wrt stopline is too big, it needs to be better aligned, alpha = {alpha}'
             rot_matrix = np.array([[np.cos(alpha), -np.sin(alpha)], [np.sin(alpha), np.cos(alpha)]])
             
-            # ## get position of the car in the stop line frame
-            local_path_cf = local_path_slf_rot 
+            # ## get position of the car in the stop line frame          ## overwrite local_path_cf 3 times???      local_path_cf = (local_path_slf_rot @ rot_matrix) - car_position_slf   ##################
+            local_path_cf = local_path_slf_rot                                                                                                  
             local_path_cf = local_path_cf @ rot_matrix #NOTE: rotation first if we ignore the lateral error and consider only the euclidean distance from the line
             local_path_cf = local_path_cf - car_position_slf #cf = car frame
             #rotate from slf to cf
@@ -698,7 +698,7 @@ class Brain:                                                                    
                 #project local path (estimated), it should match the true path
                 img, _ = project_onto_frame(img, self.car, local_path_cf, align_to_car=False)
                 cv.imshow('brain_debug', img)
-                cv.waitKey(1)
+                cv.waitKey(1)  # display img for 1ms   NOTE: waitKey() does not stop the loop
                 self.curr_state.var2 = np.array([self.car.x_true, self.car.y_true]) #var2 hold original position
                 true_start_pos_wf = self.curr_state.var2
 
@@ -708,10 +708,10 @@ class Brain:                                                                    
                 est_car_pos_slf = car_position_slf
                 est_car_pos_slf_rot = est_car_pos_slf @ rot_matrix.T
                 est_car_pos_wf = est_car_pos_slf_rot + stop_line_position
-                cv.circle(self.path_planner.map, mR2pix(est_car_pos_wf), 25, (255, 0, 255), 5)
+                cv.circle(self.path_planner.map, mR2pix(est_car_pos_wf), 25, (255, 0, 255), 5)      #  circle(img, Point center, int radius, circle color, int thickness = 1)
                 cv.circle(self.path_planner.map, mR2pix(true_start_pos_wf), 30, (0, 255, 0), 5)
                 cv.imshow('Path', self.path_planner.map)
-                cv.waitKey(1)
+                cv.waitKey(1) # display img for 1ms      NOTE: waitKey() does not stop the loop
                 #debug
                 # self.car.drive_speed(0.0)
                 # sleep(SLEEP_AFTER_STOPPING)
