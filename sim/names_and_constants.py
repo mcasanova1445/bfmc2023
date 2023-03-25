@@ -137,3 +137,22 @@ RED = 0
 ###############################################################################
 
 # AUTOMOBILE DATA
+
+# PARKING SUBSTATES
+LOCALIZING_PARKING_SPOT = 1
+CHECKING_FOR_PARKED_CARS = 2
+STEP0 = 69
+T_STEP2 = 4
+T_STEP3 = 5
+T_STEP4 = 6
+T_STEP5 = 7
+S_STEP2 = 9
+S_STEP3 = 10
+S_STEP4 = 11
+S_STEP5 = 12
+S_STEP6 = 13
+S_STEP7 = 14
+PARK_END = 16
+# park types
+T_PARK = 't'
+S_PARK = 's'
