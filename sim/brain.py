@@ -194,7 +194,7 @@ SLOW_DOWN_CONST = 0.3
 # [m] go straight for this distance in orther to exit the hihgway
 STRAIGHT_DIST_TO_EXIT_HIGHWAY = 0.8
 
-# GPS
+# GPS                     ## Could be conviniet to move both of them at the beginning with others flags??
 ALWAYS_TRUST_GPS = False  # if true the car will always trust the gps (bypass)
 # if true, the car will always distrust the gps (bypass)
 ALWAYS_DISTRUST_GPS = False
@@ -256,6 +256,7 @@ STEER_ACTUATION_DELAY = 0.3  # [s] delay to perform the steering manouver
 OBSTACLE_IS_ALWAYS_PEDESTRIAN = False
 OBSTACLE_IS_ALWAYS_CAR = False
 OBSTACLE_IS_ALWAYS_ROADBLOCK = False
+##                                                               ## Still need to fix ??
 assert OBSTACLE_IS_ALWAYS_PEDESTRIAN ^ OBSTACLE_IS_ALWAYS_CAR ^ \
         OBSTACLE_IS_ALWAYS_ROADBLOCK or not \
         (OBSTACLE_IS_ALWAYS_PEDESTRIAN or OBSTACLE_IS_ALWAYS_CAR or
@@ -352,7 +353,7 @@ class Brain:
 
         # stop line with higher precision
         self.stop_line_distance_median = 1.0
-        self.car_dist_on_path = 0
+        self.car_dist_on_path = 0 #init
 
         # debug
         self.debug = debug
@@ -473,12 +474,12 @@ class Brain:
             closest_node, distance = self.path_planner.get_closest_node(
                     curr_pos)
             print(f'GPS converged, starting from node: {closest_node}, \
-distance: {distance:.2f}')
+                    distance: {distance:.2f}')
             # sleep(3.0)
             self.checkpoints[self.checkpoint_idx] = closest_node
             if distance > 0.8:
                 self.error('ERROR: REROUTING: GPS converged, but distance is \
-too large, we are too far from the lane')
+                        too large, we are too far from the lane')
             can_generate_route = True
         else:
             start_time = self.curr_state.var2
@@ -486,7 +487,7 @@ too large, we are too far from the lane')
                     {(curr_time-start_time):.1f}/{GPS_TIMEOUT}')
             if curr_time - start_time > GPS_TIMEOUT:
                 print('WARNING: ROUTE_GENERATION: No gps signal, \
-Starting from the first checkpoint')
+                Starting from the first checkpoint')
                 sleep(3.0)
                 can_generate_route = True
 
@@ -494,7 +495,7 @@ Starting from the first checkpoint')
             print('Generating route...')
             # get start and end nodes from the chekpoint list
             assert len(self.checkpoints) >= 2, \
-                'List of checkpoints needs 2 ore more nodes'
+                'List of checkpoints needs 2 or more nodes'
             start_node = self.checkpoints[self.checkpoint_idx]
             # already checked in end_state
             end_node = self.checkpoints[self.checkpoint_idx+1]
@@ -511,7 +512,7 @@ Starting from the first checkpoint')
             self.next_event = self.events[0]
             self.prev_event.dist = 0.0
             self.car.reset_rel_pose()
-            print(f'EVENTS: idx: {self.event_idx}')
+            print(f'EVENTS: idx: {self.event_idx}')             ## sholud be print(f'EVENTS: {self.next_event} idx: {self.event_idx}') 
             for e in self.events:
                 print(e)
             # draw the path
@@ -535,7 +536,7 @@ Starting from the first checkpoint')
         self.next_checkpoint()
         self.switch_to_state(nac.START_STATE)
 
-    def doing_nothing(self):
+    def doing_nothing(self):                                    ## Is it used somewhere??
         self.activate_routines([])
 
     def lane_following(self):  # LANE FOLLOWING ##############################
@@ -575,13 +576,13 @@ Starting from the first checkpoint')
                 if dist_to_stopline >= GPS_STOPLINE_APPROACH_DISTANCE:
                     print(
                         f'Stopline is far: \
-{dist_to_stopline-GPS_STOPLINE_APPROACH_DISTANCE:.2f} [m]')
+                    {dist_to_stopline-GPS_STOPLINE_APPROACH_DISTANCE:.2f} [m]')
                 elif dist_to_stopline > 0.0:
                     print('Switching to approaching stopline')
                     self.switch_to_state(nac.APPROACHING_STOP_LINE)
                 else:
                     print('It seems we passed the stopline, or path \
-self intersected.')
+                            self intersected.')
             else:
                 far_enough_from_prev_stop_line = (self.event_idx == 1) or \
                         (self.car.dist_loc > STOP_LINE_DISTANCE_THRESHOLD)
@@ -593,7 +594,7 @@ self intersected.')
                         self.routines[nac.DETECT_STOP_LINE].active:
                     self.switch_to_state(nac.APPROACHING_STOP_LINE)
 
-    def lane_following_to_parking(self):
+    def lane_following_to_parking(self):                        ## Not a state should be moved somewhere else? or keep comment "not a state"
         dist_between_events = self.next_event.dist - self.prev_event.dist
         # Relative positioning is reset at every stopline, so we
         # can use that to approximately calculate the distance
@@ -604,25 +605,25 @@ self intersected.')
         if approx_dist_from_parking < PARKING_DISTANCE_SLOW_DOWN_THRESHOLD:
             self.car.drive_speed(0.0)
             sleep(SLEEP_AFTER_STOPPING)
-            self.switch_to_state(nac.PARKING)
+            self.switch_to_state(nac.PARKING)       
 
-    def lane_following_to_highway_exit(self):
+    def lane_following_to_highway_exit(self):                   ## Not a state should be moved somewhere else? or keep comment "not a state"
         if self.conditions[nac.TRUST_GPS] or True:
             diff = self.next_event.dist - self.car_dist_on_path
             if diff > 0.1:
                 print(f'Driving toward highway exit: exiting in \
-{diff:.2f} [m]')
+                        {diff:.2f} [m]')
             elif diff > -0.05:
                 print('Arrived at highway exit, switching to going \
-straight for exiting')
+                        straight for exiting')
                 self.switch_to_state(nac.GOING_STRAIGHT)
             else:
                 self.error('ERROR: LANE FOLLOWING: Missed Highway exit')
         else:
             # TODO implement this case with signs
-            raise NotImplementedError
+            raise NotImplementedError                                           ##
 
-    def lane_following_to_end(self):
+    def lane_following_to_end(self):                            ## Not a state should be moved somewhere else? or keep comment "not a state"
         self.activate_routines([nac.FOLLOW_LANE,
                                 nac.CONTROL_FOR_OBSTACLES,
                                 nac.DRIVE_DESIRED_SPEED])
@@ -633,7 +634,7 @@ straight for exiting')
                     self.car_dist_on_path
             if dist_to_end > END_STATE_DISTANCE_THRESHOLD:
                 print(f'Driving toward end: exiting in \
-{dist_to_end:.2f} [m]')
+                        {dist_to_end:.2f} [m]')
             elif dist_to_end > -END_STATE_DISTANCE_THRESHOLD:
                 print('Arrived at end, switching to end state')
                 self.switch_to_state(nac.END_STATE)
@@ -678,16 +679,16 @@ straight for exiting')
             # Events without stopline = LOGIC ERROR
             elif next_event_name == nac.PARKING_EVENT:
                 self.error('WARNING: UNEXPECTED STOP LINE FOUND WITH \
-PARKING AS NEXT EVENT')
+                            PARKING AS NEXT EVENT')
             elif next_event_name == nac.HIGHWAY_EXIT_EVENT:
                 self.error('WARNING: UNEXPECTED STOP LINE FOUND WITH \
-HIGHWAY EXIT AS NEXT EVENT')
+                            HIGHWAY EXIT AS NEXT EVENT')
             else:
                 self.error('ERROR: UNEXPECTED STOP LINE FOUND WITH \
-UNKNOWN EVENT AS NEXT EVENT')
+                            UNKNOWN EVENT AS NEXT EVENT')
             self.activate_routines([])  # deactivate all routines
 
-    def approaching_stop_line_gps(self):
+    def approaching_stop_line_gps(self):                        ## Not a state should be moved somewhere else? or keep comment "not a state"
         dist_to_stopline = self.next_event.dist - self.car_dist_on_path
         if dist_to_stopline >= GPS_STOPLINE_APPROACH_DISTANCE:
             print('Switching to lane following')
@@ -695,14 +696,14 @@ UNKNOWN EVENT AS NEXT EVENT')
             return
         elif dist_to_stopline >= GPS_STOPLINE_STOP_DISTANCE:
             print(f'Approaching stop line: \
-{dist_to_stopline-GPS_STOPLINE_STOP_DISTANCE:.2f} [m]')
+                {dist_to_stopline-GPS_STOPLINE_STOP_DISTANCE:.2f} [m]')
             decide_next_state = False
-        elif dist_to_stopline >= 0:
+        elif dist_to_stopline >= 0:                             ## Do we stop here??
             print('Arrived at stop line')
             decide_next_state = True
         else:
             self.error(f'ERROR: APPROACHING STOP LINE: Missed stop line, \
-dist: {dist_to_stopline}')
+                        dist: {dist_to_stopline}')
         return decide_next_state
 
     def approaching_stop_line_vision(self):
@@ -710,7 +711,7 @@ dist: {dist_to_stopline}')
         # #check if we are here by mistake
         if dist > STOP_LINE_APPROACH_DISTANCE:
             self.switch_to_state(nac.LANE_FOLLOWING)
-            return False
+            return False                                                    ## Why return false ??
         # we have a median => we have an accurate position for the stopline
         if self.stop_line_distance_median is not None:
             print('Driving towards stop line... at distance: ',
@@ -722,9 +723,9 @@ dist: {dist_to_stopline}')
             self.car.drive_distance(dist_to_drive)
             if dist_to_drive < STOP_LINE_STOP_DISTANCE:
                 print(f'Arrievd at stop line. Using median distance: \
-{self.stop_line_distance_median}')
+                        {self.stop_line_distance_median}')
                 print(f'                           encoder distance: \
-{ self.car.encoder_distance:.2f}')
+                        {self.car.encoder_distance:.2f}')
                 # sleep(1.0)
                 decide_next_state = True
             else:
@@ -733,7 +734,7 @@ dist: {dist_to_stopline}')
         # (possibly inaccurate) network estimaiton
         else:
             print('WARNING: APPROACHING_STOP_LINE: stop distance may \
-be imprecise')
+                    be imprecise')
             if dist < STOP_LINE_STOP_DISTANCE:
                 print('Stopped at stop line. Using network distance: ',
                       self.detect.est_dist_to_stop_line)
