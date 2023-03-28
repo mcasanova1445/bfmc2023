@@ -177,7 +177,7 @@ GPS_STOPLINE_STOP_DISTANCE = 0.5
 assert STOP_LINE_STOP_DISTANCE <= STOP_LINE_APPROACH_DISTANCE
 assert GPS_STOPLINE_STOP_DISTANCE <= GPS_STOPLINE_APPROACH_DISTANCE
 
-STOP_WAIT_TIME = 0.001*3.0 if not SPEED_CHALLENGE else 0.0  # 3.0
+STOP_WAIT_TIME = 0.001*3.0 if not SPEED_CHALLENGE else 0.0  # 3.0              ## why this short? 0.003?
 # local tracking
 OPEN_LOOP_PERCENTAGE_OF_PATH_AHEAD = 0.6  # 0.6
 # distance from previous stop_line from which is possible to
@@ -574,9 +574,8 @@ class Brain:
             if self.conditions[nac.TRUST_GPS]:
                 dist_to_stopline = self.next_event.dist - self.car_dist_on_path
                 if dist_to_stopline >= GPS_STOPLINE_APPROACH_DISTANCE:
-                    print(
-                        f'Stopline is far: \
-                    {dist_to_stopline-GPS_STOPLINE_APPROACH_DISTANCE:.2f} [m]')
+                    print(f'Stopline is far: \
+                     {dist_to_stopline-GPS_STOPLINE_APPROACH_DISTANCE:.2f} [m]')
                 elif dist_to_stopline > 0.0:
                     print('Switching to approaching stopline')
                     self.switch_to_state(nac.APPROACHING_STOP_LINE)
@@ -791,11 +790,12 @@ class Brain:
                     car_position_slf = car_position_slf @ hf.rot_matrix(angle)
                 else:
                     x_dist = self.next_event.dist - self.car_dist_on_path
-                    y_dist = 0.0
+                    y_dist = 0.0                                            ## Why are we using only x_dist ??
                     car_position_slf = -np.array([x_dist, y_dist])
                 print('Car position in stop line frame: ', car_position_slf)
             else:
                 if USE_ADVANCED_NETWORK_FOR_STOPLINES:
+                    ##                                                  stopline_x and stopline_angle seems not used
                     stopline_x, stopline_y, stopline_angle = \
                             self.detect.detect_stop_line2(self.car.frame,
                                                           show_ROI=SHOW_IMGS)
@@ -813,7 +813,7 @@ class Brain:
                 # we do not have an accurate position for the stopline
                 else:
                     print('We DONT have the median, using \
-simple net estimation')
+                            simple net estimation')
                     print(len(self.routines[nac.DETECT_STOP_LINE].var2))
                     if self.detect.est_dist_to_stop_line < \
                             STOP_LINE_APPROACH_DISTANCE:
@@ -839,17 +839,15 @@ simple net estimation')
                 if closest_node not in \
                         self.path_planner.no_yaw_calibration_nodes:
                     print(f'yaw = {np.rad2deg(self.car.yaw):.2f}')
-                    print(
-                        f'est yaw = \
-{np.rad2deg(self.next_event.yaw_stopline + alpha):.2f}'
-                        )
+                    print(f'est yaw = \
+                      {np.rad2deg(self.next_event.yaw_stopline + alpha):.2f}')
                     diff = hf.diff_angle(self.next_event.yaw_stopline + alpha,
                                          self.car.yaw)
                     self.car.yaw_offset += diff
                     self.car.yaw += diff
             assert abs(alpha) < np.pi/6, \
                 f'Car orientation wrt stopline is too big, it needs to be \
-better aligned, alpha = {alpha}'
+                    better aligned, alpha = {alpha}'
 
             # get position of the car in the stop line frame
             # NOTE: rotation first if we ignore the lateral error and \
@@ -910,10 +908,10 @@ better aligned, alpha = {alpha}'
                                        self.desired_speed, gains=gains)
             self.car.drive(out_speed, np.rad2deg(out_angle))
 
-    def roundabout_navigation(self):
+    def roundabout_navigation(self):                            ## not really usefull
         self.switch_to_state(nac.TRACKING_LOCAL_PATH)
 
-    def waiting_for_pedestrian(self):
+    def waiting_for_pedestrian(self):                           
         self.activate_routines([nac.FOLLOW_LANE])
         dist_ahead = self.car.filtered_sonar_distance
         if self.curr_state.just_switched:
@@ -929,14 +927,13 @@ better aligned, alpha = {alpha}'
         if dist_ahead < OBSTACLE_DISTANCE_THRESHOLD:
             print('Waiting for pedestrian...')
             self.activate_routines([])
-            self.curr_state.var1 = last_seen_pedestrian_time = time()
+            self.curr_state.var1 = last_seen_pedestrian_time = time()       ## Why this line exist ?
         else:
             last_seen_pedestrian_time = self.curr_state.var1
             self.activate_routines([])
             curr_time = time()
-            print(
-                f'Pedestrian has cleared the road, keep waiting for: \
-{curr_time - last_seen_pedestrian_time}/{PEDESTRIAN_TIMEOUT}')
+            print(f'Pedestrian has cleared the road, keep waiting for: \
+             {curr_time - last_seen_pedestrian_time}/{PEDESTRIAN_TIMEOUT}')
             if curr_time - last_seen_pedestrian_time > PEDESTRIAN_TIMEOUT:
                 sleep(SLEEP_AFTER_STOPPING)
                 print(f'Switching back to {self.prev_state}')
@@ -983,14 +980,13 @@ better aligned, alpha = {alpha}'
             self.curr_state.var1 = (OT_SWITCHING_LANE, True)
             self.curr_state.var2 = self.car.encoder_distance
             self.env.publish_obstacle(nac.STATIC_CAR_ON_ROAD,
-                                      self.car.x_est,
-                                      self.car.y_est)
+                              self.car.x_est, self.car.y_est)
             self.curr_state.just_switched = False
         sub_state, just_sub_switched = self.curr_state.var1
         dist_prev_manouver = self.curr_state.var2
         if sub_state == OT_SWITCHING_LANE:
             if just_sub_switched:
-                self.car.drive_angle(-OVERTAKE_STEER_ANGLE)
+                self.car.drive_angle(-OVERTAKE_STEER_ANGLE)                 ## Do we need to check for obstacles first?
                 dist_prev_manouver = self.car.encoder_distance
                 self.car.drive_speed(OVERTAKE_STATIC_CAR_SPEED)
                 just_sub_switched = False
@@ -1079,7 +1075,7 @@ better aligned, alpha = {alpha}'
             dist_to_drive = dist - TAILING_DISTANCE
             self.car.drive_distance(dist_to_drive)
             if self.conditions[nac.CAN_OVERTAKE]:
-                if self.conditions[nac.HIGHWAY]:
+                if self.conditions[nac.HIGHWAY]:                        ## is moving car only on highway?
                     self.switch_to_state(nac.OVERTAKING_MOVING_CAR)
                 else:
                     if -0.05 < dist_to_drive < 0.05:
@@ -1109,21 +1105,21 @@ better aligned, alpha = {alpha}'
                 closest_node, distance = self.\
                     path_planner.get_closest_node(curr_pos)
                 print(f'GPS converged, node: {closest_node}, distance: \
-{distance:.2f}')
+                        {distance:.2f}')
                 if closest_node in RB_NODES_LEFT_LANE:
                     self.curr_state.var4 = True
                 elif closest_node in RB_NODES_RIGHT_LANE:
                     self.curr_state.var4 = False
                 else:
                     self.error('ERROR: ROADBLOCK: GPS converged but we are \
-not in a possible node for switching lane')
+                                not in a possible node for switching lane')
                 if distance > 0.8:
                     self.error('ERROR: REROUTING: GPS converged, but distance \
-is too large, we are too far from the lane')
+                                is too large, we are too far from the lane')
             else:
                 start_time = self.curr_state.var2
                 print(f'Waiting for gps: \
-{(curr_time-start_time):.1f}/{GPS_TIMEOUT}')
+                        {(curr_time-start_time):.1f}/{GPS_TIMEOUT}')
                 if curr_time - start_time > GPS_TIMEOUT:
                     # TODO manage this case
                     self.error('WARNING: AVOIDING ROADBLOCK: No gps signal')
@@ -1140,7 +1136,6 @@ is too large, we are too far from the lane')
                 self.car.drive_speed(AVOID_ROADBLOCK_SPEED)
                 self.curr_state.var1 = \
                     start_encoder_pos = self.car.encoder_distance
-                # just switched = false
                 self.curr_state.var3 = (AR_SWITCHING_LANE, False)
             else:
                 start_encoder_pos = self.curr_state.var1
@@ -1179,7 +1174,7 @@ is too large, we are too far from the lane')
                 park_type = nac.T_PARK
             else:
                 self.error('ERROR: PARKING -> parking spot is not close to \
-    expected parking spot position!')
+                            expected parking spot position!')
             self.curr_state.var1 = (park_state, park_type, True)
             self.curr_state.just_switched = False
 
@@ -1248,8 +1243,8 @@ is too large, we are too far from the lane')
                                             park_type, True)
                     self.parking_method = 'sign'
                 print(f'Parking: GPS not trusted, \
-waiting for GPS to be trusted for \
-{passed_time}/{PARK_MAX_SECONDS_W8_GPS} [s]...')
+                        waiting for GPS to be trusted for \
+                        {passed_time}/{PARK_MAX_SECONDS_W8_GPS} [s]...')
             else:  # gps is trusted or we have already trusted it
                 # we trusted gps once
                 self.curr_state.var2 = trusted_gps_once = True
@@ -1278,10 +1273,10 @@ waiting for GPS to be trusted for \
                             park_type, True)
                     else:
                         print(f'getting closer...  dist: \
-{self.car.dist_loc:.2f}/{MAX_PARK_SEARCH_DIST:.2f}')
+                      {self.car.dist_loc:.2f}/{MAX_PARK_SEARCH_DIST:.2f}')
                 else:
                     self.error('ERROR: PARKING: In front of parking spot, \
-or maximum search distance reached')
+                                or maximum search distance reached')
         elif (self.parking_method == 'sign' or ALWAYS_USE_SIGN_FOR_PARKING
               ) and not ALWAYS_USE_GPS_FOR_PARKING:
             print('Using sign for parking')
@@ -1298,7 +1293,7 @@ or maximum search distance reached')
                 # parking sign reached or not
                 self.curr_state.var3 = False
                 self.car.drive_speed(PARK_SEARCH_SPEED)
-                self.curr_state.var1 = (park_state, park_type, False)
+                self.curr_state.var1 = (park_state, park_type, False)       ## already updated few lines before, is there any reason we need to reupdate??
 
             sign, _, _, _ = self.detect.detect_sign(self.car.frame,
                                                     show_ROI=True)
@@ -1314,13 +1309,13 @@ or maximum search distance reached')
                     self.curr_state.var3 = True  # parking sign reached
                     park_sign_counter = 0
                     print('Reached parking spot, keep going until the \
-sign disappears')
+                           sign disappears')
             else:  # parking sign reached
                 if sign != 'park':
                     park_sign_counter += 1
                 if park_sign_counter >= PARK_SIGN_DETETCTION_PATIENCE:
                     print('Sign disappeared, setting up things for \
-searching for parked cars')
+                           searching for parked cars')
                     self.car.drive_speed(0.0)
                     # go to next substate
                     self.curr_state.var1 = (nac.CHECKING_FOR_PARKED_CARS,
@@ -1395,7 +1390,7 @@ searching for parked cars')
             overshoot_distance = dist_first_spot+dist_spots+further_dist +\
                     MAX_ERROR_ON_LOCAL_DIST-curr_dist
             self.error(f'ERROR: PARKING: CHECKING_CARS: \
-Overshoot distance, error: {overshoot_distance:.2f}')
+                    Overshoot distance, error: {overshoot_distance:.2f}')
 
         # update var2 at the end of every iteration
         self.curr_state.var2 = (car_in_spot1, car_in_spot2,
@@ -1408,9 +1403,10 @@ Overshoot distance, error: {overshoot_distance:.2f}')
         car_in_spot1, car_in_spot2, _, _ = self.curr_state.var2
 
         if just_changed:
-            # TODO change the behaviour: go to next event or something
+            # TODO change the behaviour: go to next event or something      ## simply go back to lane_following ?
             if car_in_spot1 and car_in_spot2:
                 self.error('ERROR: PARKING: Car in both spots!')
+                ##                                                               self.switch_to_state(nac.LANE_FOLLOWING)
             elif not car_in_spot2:
                 print('Spot 2 is free. Going to spot 2 now')
                 park_state = nac.T_STEP2 if park_type == nac.T_PARK else \
@@ -1434,7 +1430,7 @@ Overshoot distance, error: {overshoot_distance:.2f}')
                 self.car.drive_speed(0.0)
                 sleep(SLEEP_AFTER_STOPPING)
                 print('Aligned with first parking spot')
-                sleep(1)
+                sleep(1)                                            ## Another sleep?
                 park_state = nac.T_STEP2 if park_type == nac.T_PARK else \
                     nac.S_STEP2
                 self.curr_state.var1 = (park_state, park_type, True)
@@ -1442,7 +1438,7 @@ Overshoot distance, error: {overshoot_distance:.2f}')
                 overshoot_distance = dist_spots + MAX_ERROR_ON_LOCAL_DIST \
                         - dist
                 self.error(f'ERROR: PARKING: STEP0: Overshoot distance, \
-error: {overshoot_distance:.2f}')
+                             error: {overshoot_distance:.2f}')
 
     def parking_t(self, just_changed, park_state, park_type):
         if park_state == nac.T_STEP2:
@@ -1459,7 +1455,7 @@ error: {overshoot_distance:.2f}')
 
     def parking_t2(self, just_changed, park_state, park_type):
         print('T-parking manouver step 2, we are aligned with the parking \
-spot, going right and backward')
+                spot, going right and backward')
         self.activate_routines([])
         if just_changed:
             self.car.drive_angle(+T_ANGLE)
@@ -1475,7 +1471,7 @@ spot, going right and backward')
             overshoot_distance = DIST_2T + MAX_ERROR_ON_LOCAL_DIST - \
                     self.car.dist_loc
             self.error(f'ERROR: PARKING: T_STEP2: Overshoot distance, \
-error:{overshoot_distance:.2f}')
+                         error:{overshoot_distance:.2f}')
 
     def parking_t3(self, just_changed, park_state, park_type):
         print('T-parking manouver step 3, going backward')
@@ -1499,8 +1495,9 @@ error:{overshoot_distance:.2f}')
                 overshoot_distance = DIST_3T + MAX_ERROR_ON_LOCAL_DIST - \
                         self.car.dist_loc
                 self.error(f'ERROR: PARKING: T_STEP3: Overshoot distance, \
-error:{overshoot_distance:.2f}')
+                             error:{overshoot_distance:.2f}')
 
+    # Once we parked we get back in lane
     def parking_t4(self, just_changed, park_state, park_type):
         print('T-parking manouver step 4, going forward')
         print(f'Distance: {self.car.dist_loc:.2f}/{DIST_3T}')
@@ -1519,7 +1516,7 @@ error:{overshoot_distance:.2f}')
             overshoot_distance = DIST_3T + MAX_ERROR_ON_LOCAL_DIST - \
                     self.car.dist_loc
             self.error(f'ERROR: PARKING: T_STEP4: Overshoot distance, \
-error:{overshoot_distance:.2f}')
+                         error:{overshoot_distance:.2f}')
 
     def parking_t5(self, just_changed, park_state, park_type):
         print('T-parking manouver step 5, going right and forward')
@@ -1540,7 +1537,7 @@ error:{overshoot_distance:.2f}')
             overshoot_distance = DIST_2T + MAX_ERROR_ON_LOCAL_DIST - \
                     self.car.dist_loc
             self.error(f'ERROR: PARKING: T_STEP5: Overshoot distance, \
-error:{overshoot_distance:.2f}')
+                         error:{overshoot_distance:.2f}')
 
     def parking_s(self, just_changed, park_state, park_type):
         if park_state == nac.S_STEP2:
@@ -1579,7 +1576,7 @@ error:{overshoot_distance:.2f}')
             overshoot_distance = DIST_2S + MAX_ERROR_ON_LOCAL_DIST - \
                     self.car.dist_loc
             self.error(f'ERROR: PARKING: S_STEP2: Overshoot distance, \
-error:{overshoot_distance:.2f}')
+                         error:{overshoot_distance:.2f}')
 
     def parking_s3(self, just_changed, park_state, park_type):
         print('S-parking manouver step 3')
@@ -1599,7 +1596,7 @@ error:{overshoot_distance:.2f}')
             overshoot_distance = DIST_2S + MAX_ERROR_ON_LOCAL_DIST - \
                     self.car.dist_loc
             self.error(f'ERROR: PARKING: S_STEP3: Overshoot distance, \
-error:{overshoot_distance:.2f}')
+                         error:{overshoot_distance:.2f}')
 
     def parking_s4(self, just_changed, park_state, park_type):
         print('S-parking manouver step 4')
@@ -1623,7 +1620,7 @@ error:{overshoot_distance:.2f}')
             overshoot_distance = DIST_4S + MAX_ERROR_ON_LOCAL_DIST - \
                     self.car.dist_loc
             self.error(f'ERROR: PARKING: S_STEP4: Overshoot distance, \
-error:{overshoot_distance:.2f}')
+                         error:{overshoot_distance:.2f}')
 
     def parking_s5(self, just_changed, park_state, park_type):
         print('S-parking manouver step 5')
@@ -1638,13 +1635,13 @@ error:{overshoot_distance:.2f}')
         if self.car.dist_loc > DIST_4S:
             self.car.drive_speed(0.0)
             sleep(SLEEP_AFTER_STOPPING)
-            print('Parked')
+            print('Parked')                                     ## Forget to delete? We accomplish parking in step 4
             self.curr_state.var1 = (nac.S_STEP6, park_type, True)
         if self.car.dist_loc > DIST_4S + MAX_ERROR_ON_LOCAL_DIST:
             overshoot_distance = DIST_4S + MAX_ERROR_ON_LOCAL_DIST - \
                     self.car.dist_loc
             self.error(f'ERROR: PARKING: S_STEP5: Overshoot distance, \
-error:{overshoot_distance:.2f}')
+                         error:{overshoot_distance:.2f}')
 
     def parking_s6(self, just_changed, park_state, park_type):
         print('S-parking manouver step 6')
@@ -1664,7 +1661,7 @@ error:{overshoot_distance:.2f}')
             overshoot_distance = DIST_2S + MAX_ERROR_ON_LOCAL_DIST - \
                     self.car.dist_loc
             self.error(f'ERROR: PARKING: S_STEP6: Overshoot distance, \
-error:{overshoot_distance:.2f}')
+                         error:{overshoot_distance:.2f}')
 
     def parking_s7(self, just_changed, park_state, park_type):
         print('S-parking manouver step 7')
@@ -1684,7 +1681,7 @@ error:{overshoot_distance:.2f}')
             overshoot_distance = DIST_2S + MAX_ERROR_ON_LOCAL_DIST - \
                     self.car.dist_loc
             self.error(f'ERROR: PARKING: S_STEP7: Overshoot distance, \
-error:{overshoot_distance:.2f}')
+                         error:{overshoot_distance:.2f}')
 
     def parking_end(self):
         self.switch_to_state(nac.LANE_FOLLOWING)
@@ -1718,7 +1715,7 @@ error:{overshoot_distance:.2f}')
             self.switch_to_prev_state()
         elif OBSTACLE_IMGS_CAPTURE_STOP_DISTANCE <= dist < \
                 OBSTACLE_DISTANCE_THRESHOLD:  # we are approaching the obstacle
-            print('Capturing imgs')
+            print('Capturing imgs')                             ## Where are we capturing images?
         else:
             frames = self.get_frames_in_range(
                     start_dist=OBSTACLE_IMGS_CAPTURE_START_DISTANCE -
@@ -1777,7 +1774,7 @@ error:{overshoot_distance:.2f}')
         output_speed, output_angle = self.controller_sp.get_control_speed(
                 0.0, 0.0, e3)
         print(f'output_speed: {output_speed:.2f}, output_angle: \
-{np.rad2deg(output_angle):.2f}')
+                {np.rad2deg(output_angle):.2f}')
         self.car.drive(speed=output_speed, angle=np.rad2deg(output_angle))
 
     # =============== ROUTINES =============== #
@@ -1787,7 +1784,7 @@ error:{overshoot_distance:.2f}')
 
         hf.show_follow_lane(self, point_ahead, SHOW_IMGS)
         speed, angle_ref = self.controller.get_control(e2, e3, 0,
-                                                       self.desired_speed)
+                                                       self.desired_speed)          ## speed seems not used
         angle_ref = np.rad2deg(angle_ref)
         self.car.drive_angle(angle_ref)
 
@@ -1804,8 +1801,8 @@ error:{overshoot_distance:.2f}')
         past_detections = self.routines[nac.DETECT_STOP_LINE].var2
         # -0.1 #network is more accurate in this range
         if dist < STOP_LINE_APPROACH_DISTANCE-0.05:
-            DETECTION_DEQUE_LENGTH = 50
-            SAMPLE_BEFORE_CONFIDENCE = 20
+            DETECTION_DEQUE_LENGTH = 50                             ## move to nac?
+            SAMPLE_BEFORE_CONFIDENCE = 20                           ## move to nac?
             # var1 holds last detection time
             if self.routines[nac.DETECT_STOP_LINE].var1 is not None:
                 last_detection_time = self.routines[nac.DETECT_STOP_LINE].var1
@@ -1859,12 +1856,13 @@ error:{overshoot_distance:.2f}')
                         if self.sign_seen[i] == 0:
                             self.sign_seen[i] = 1
                             print(f'SEEN SIGN \
-{nac.SIGN_NAMES[self.sign_types[i]]}, at pos {self.sign_points[i]}')
+                                    {nac.SIGN_NAMES[self.sign_types[i]]}, \
+                                    at pos {self.sign_points[i]}')
                             self.curr_sign = nac.SIGN_NAMES[self.sign_types[i]]
                 else:
                     self.curr_sign = nac.NO_SIGN
 
-            else:  # Use signs
+            else:  # Use signs                                  ## error: code is unreachable ???
                 return  # TODO remove it and use better detection
                 sign, _ = self.detect.detect_sign(self.car.frame,
                                                   show_ROI=SHOW_IMGS,
@@ -1901,7 +1899,7 @@ error:{overshoot_distance:.2f}')
             self.car.drive_speed(self.desired_speed)
 
     # STATE CHECKS
-    def check_logic(self):
+    def check_logic(self):                                        ##  USELESS ??
         pass
 
     # UPDATE CONDITIONS
@@ -1931,7 +1929,7 @@ error:{overshoot_distance:.2f}')
         if self.conditions[nac.TRUST_GPS]:
             est_pos = np.array([self.car.x_est, self.car.y_est])
             closest_node, distance = self.\
-                path_planner.get_closest_node(est_pos)
+                path_planner.get_closest_node(est_pos)              ## distance seems not be used 
 
             # HIGHWAY
             self.conditions[nac.HIGHWAY] = closest_node in \
@@ -1964,7 +1962,7 @@ error:{overshoot_distance:.2f}')
                     self.conditions[nac.CAR_ON_PATH] = True
 
                 # UPDATING CAR PATH INDEX
-                GPS_DELAY = 0.4  # [s]
+                GPS_DELAY = 0.4  # [s]                              ## move to nac ??
                 dist_delay_increment = GPS_DELAY * \
                     self.car.filtered_encoder_velocity  # - self.car.WB/2
                 print(f'IDX DELAY INCREMENT: {dist_delay_increment}')
@@ -1979,21 +1977,21 @@ error:{overshoot_distance:.2f}')
     # ===================== STATE MACHINE MANAGEMENT ===================== #
     def run(self):
         print('===============================================================\
-===========')
+               ===========')
         print(f'STATE:          {self.curr_state}')
         print(f'UPCOMING_EVENT: {self.next_event}')
         print(f'ROUTINES:    {self.active_routines_names+ALWAYS_ON_ROUTINES}')
         print(f'CONDITIONS:  {self.conditions}')
         print('===============================================================\
-===========')
+               ===========')
         self.run_current_state()
         print(f'CURR_SIGN: {self.curr_sign}')
         print('===============================================================\
-===========')
+               ===========')
         print()
         self.run_routines()
         print('===============================================================\
-===========')
+               ===========')
         print()
         self.check_logic()
 
@@ -2014,7 +2012,7 @@ error:{overshoot_distance:.2f}')
         """
         assert all([r in self.routines.keys() for r in routines_to_activate]),\
             'ERROR: activate_routines: routines_to_activate contains \
-invalid routine'
+             invalid routine'
         self.active_routines_names = []
         for k, r in self.routines.items():
             r.active = k in routines_to_activate
@@ -2023,12 +2021,12 @@ invalid routine'
 
     def add_routines(self, routines):
         """
-        add routines to he active routines without overwriting the other
+        add routines to the active routines without overwriting the other
         ex: ['follow_lane', 'control_for_signs']
         """
         assert all([r in self.routines.keys() for r in routines]), \
             'ERROR: add_routines: routines_to_activate contains \
-invalid routine'
+            invalid routine'
         for k in routines:
             self.routines[k].active = True
 
@@ -2052,7 +2050,7 @@ invalid routine'
             self.curr_state.interrupted = True
         self.curr_state.just_switched = True
 
-    def switch_to_prev_state(self):
+    def switch_to_prev_state(self):             ## used only once, could be handeled differently
         self.switch_to_state(self.prev_state.name)
 
     def go_to_next_event(self):
@@ -2097,7 +2095,7 @@ invalid routine'
                 loc_path = path_ahead - point
                 # get yaw of the stopline
                 assert path_ahead.shape[0] > 10, f'path_ahead is too short: \
-{path_ahead.shape[0]}'
+                                                   {path_ahead.shape[0]}'
                 path_first_10 = path_ahead[:10]
                 diff10 = path_first_10[1:] - path_first_10[:-1]
                 yaw_raw = np.median(np.arctan2(diff10[:, 1], diff10[:, 0]))
@@ -2106,7 +2104,7 @@ invalid routine'
                 path_to_ret = loc_path
                 curv = hf.get_curvature(path_ahead)
                 print(f'yaw_stopline: {yaw_stopline}, name: \
-{name}, curv: {curv}')
+                        {name}, curv: {curv}')
                 len_path_ahead = 0.01*len(path_ahead)
             else:
                 path_to_ret = None
@@ -2128,7 +2126,7 @@ invalid routine'
         return to_ret
 
     # Utility functions
-    def get_frames_in_range(self, start_dist, end_dist=0.0):
+    def get_frames_in_range(self, start_dist, end_dist=0.0):                ## should be moved to help functions?
         len_past_frames = len(self.past_frames)
         print(f'len_past_frames: {len_past_frames}')
         idx_start = int(round(start_dist/DISTANCES_BETWEEN_FRAMES))
