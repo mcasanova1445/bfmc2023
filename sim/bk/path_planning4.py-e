@@ -381,7 +381,7 @@ class PathPlanning():
                 exit_points_idx.append(path_exit_point_idx[min_idx])
                 path_exit_point_idx[min_idx] = max_idx+1
 
-        # get all the points the path intersects with the stopline_points
+        # get all the points the path intersects with the stop_line_points
         path_event_points = []
         path_event_points_idx = []
         path_event_types = []
@@ -427,14 +427,19 @@ class PathPlanning():
                 path_ahead = self.path[self.path_event_points_idx[i]:end_idx]
                 local_idx += 1
                 path_event_path_ahead.append(path_ahead)
-                hf.draw_event(self, path_ahead, draw)
+                if draw:
+                    for p in path_ahead:
+                        cv.circle(self.map, hf.mR2pix(p), 10, (200, 150, 0), 5)
             elif t.startswith('junction') or t.startswith('highway'):
                 assert len(self.path) > 0
                 path_ahead = self.path[
                         self.path_event_points_idx[i]:min(
                             self.path_event_points_idx[i]+140, len(self.path))]
                 path_event_path_ahead.append(path_ahead)
-                hf.draw_event(self, path_ahead, draw)
+                if draw:
+                    for p in path_ahead:
+                        cv.circle(self.map, hf.mR2pix(p), 10, (200, 150, 0), 5)
+
             else:
                 path_event_path_ahead.append(None)
 
@@ -479,7 +484,7 @@ class PathPlanning():
         return np.array(self.path[index:min(index + look_ahead,
                                             len(self.path)-1), :])
 
-    def get_closest_stopline(self, nx, ny, draw=False):
+    def get_closest_stop_line(self, nx, ny, draw=False):
         """
         Returns the closest stop point to the given point
         """

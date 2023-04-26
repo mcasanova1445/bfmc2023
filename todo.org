@@ -36,6 +36,12 @@
 
 ** Unify stopline detection (only advanced?)
 
+** NO REROUTING IN THE MIDDLE OF THE RUN. Trust is key
+
+** The IMU can be used to navigate the roundabout
+
+** To enter the bumpy road, we can use the right turner
+
 * Weekly meetings: Tuesday 09h00
 
 * PRIORITY: CNN

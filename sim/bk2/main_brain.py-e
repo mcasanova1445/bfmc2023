@@ -31,7 +31,7 @@ TARGET_FPS = 30.0
 sample_time = 0.01  # [s]
 DESIRED_SPEED = 0.35  # [m/s]
 # DESIRED_SPEED = 0.8  # [m/s]
-SP_SPEED = 0.35  # [m/s]
+SP_SPEED = 0.8  # [m/s]
 CURVE_SPEED = 0.6  # [m/s]
 path_step_length = 0.01  # [m]
 # CONTROLLER
@@ -76,7 +76,7 @@ if __name__ == '__main__':
 
     # init the car data
     if SIMULATOR_FLAG:
-        # os.system('rosservice call /gazebo/reset_simulation')
+        os.system('rosservice call /gazebo/reset_simulation')
         os.system('rosservice call gazebo/unpause_physics')
         car = AutomobileDataSimulator(trig_cam=True,
                                       trig_gps=True,
@@ -152,8 +152,6 @@ if __name__ == '__main__':
             #         {detect.avg_sign_detection_time:.1f} [ms]')
             print(f'FPS = {fps_avg:.1f},  \
                     loop_cnt = {fps_cnt}, capped at {TARGET_FPS}')
-            print('VALIDATION: ', brain.start_node_validated)
-            print('PATH: ', brain.path_planner.route_graph.nodes)
             # if SEXY_FLAG:
             #     x_orig = car.x_est
             #     y_orig = car.y_est

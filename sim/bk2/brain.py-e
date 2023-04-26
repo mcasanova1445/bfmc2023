@@ -20,17 +20,13 @@ from environmental_data_simulator import EnvironmentalData
 
 import helper_functions as hf
 
-SHOW_IMGS = False
+SHOW_IMGS = True
 
 END_NODE = 85
 # CHECKPOINTS = [299, 275] #roundabout
 # CHECKPOINTS = [86, 99, 116] #left right left right
 # complete track#[86, 430, 193, 141, 346, 85] #complete track
 CHECKPOINTS = [86, 430, 193, 141, 346, 85]  # complete track
-# CHECKPOINTS = [86, 345, 193, 141, 346, 85]  # complete track
-# CHECKPOINTS = [86, 234, 193, 141, 346, 85]  # complete track
-# CHECKPOINTS = [86, 341, 193, 141, 346, 85]  # no bumpy
-# CHECKPOINTS = [86, 85]  # to the end
 # CHECKPOINTS = [86, 255, 110, 346, END_NODE]
 # CHECKPOINTS = [86, 235, END_NODE]
 SPEED_CHALLENGE = False
@@ -124,7 +120,7 @@ CONDITIONS = {
         # in expecting a sign or traffic light
         # can be set as false if there is a lot of
         # package loss or the car has not received signal in a while
-        nac.TRUST_GPS:    False,
+        nac.TRUST_GPS:    True,
         # if true, the car is on the path, if the gps is trusted
         # and the position is too far from the path it will be set to false
         nac.CAR_ON_PATH:  True,
@@ -170,11 +166,15 @@ BACKTOWHEEL = 0.10  # [m]       distance of the wheel and the car body
 WHEEL_LEN = 0.03
 
 # STOPLINES
-STOPLINE_APPROACH_DISTANCE = 0.4
-STOPLINE_STOP_DISTANCE = 0.15  # 0.1 #in the true map
+USE_ADVANCED_NETWORK_FOR_STOPLINES = True
+if USE_ADVANCED_NETWORK_FOR_STOPLINES:
+    STOP_LINE_APPROACH_DISTANCE = 0.4
+else:
+    0.4
+STOP_LINE_STOP_DISTANCE = 0.15  # 0.1 #in the true map
 GPS_STOPLINE_APPROACH_DISTANCE = 0.8
 GPS_STOPLINE_STOP_DISTANCE = 0.5
-assert STOPLINE_STOP_DISTANCE <= STOPLINE_APPROACH_DISTANCE
+assert STOP_LINE_STOP_DISTANCE <= STOP_LINE_APPROACH_DISTANCE
 assert GPS_STOPLINE_STOP_DISTANCE <= GPS_STOPLINE_APPROACH_DISTANCE
 
 STOP_WAIT_TIME = 0.001*3.0 if not SPEED_CHALLENGE else 0.0  # 3.0              ## why this short? 0.003?
@@ -182,7 +182,7 @@ STOP_WAIT_TIME = 0.001*3.0 if not SPEED_CHALLENGE else 0.0  # 3.0              #
 OPEN_LOOP_PERCENTAGE_OF_PATH_AHEAD = 0.6  # 0.6
 # distance from previous stopline from which is possible to
 # start detecting a stop line again
-STOPLINE_DISTANCE_THRESHOLD = 0.2
+STOP_LINE_DISTANCE_THRESHOLD = 0.2
 POINT_AHEAD_DISTANCE_LOCAL_TRACKING = 0.3  # 0.3
 
 # speed control
@@ -197,7 +197,7 @@ STRAIGHT_DIST_TO_EXIT_HIGHWAY = 0.8
 # GPS                     ## Could be conviniet to move both of them at the beginning with others flags??
 ALWAYS_TRUST_GPS = False  # if true the car will always trust the gps (bypass)
 # if true, the car will always distrust the gps (bypass)
-ALWAYS_DISTRUST_GPS = True
+ALWAYS_DISTRUST_GPS = False
 assert not (ALWAYS_TRUST_GPS and ALWAYS_DISTRUST_GPS), \
         'ALWAYS_TRUST_GPS and ALWAYS_DISTRUST_GPS cannot be both True'
 # Rerouting
@@ -374,8 +374,8 @@ class Brain:
             nac.LANE_FOLLOWING: State(nac.LANE_FOLLOWING, self.lane_following),
             # intersection navigation, further divided into the possible
             # directions [left, right, straight]
-            nac.APPROACHING_STOPLINE:
-            State(nac.APPROACHING_STOPLINE, self.approaching_stopline),
+            nac.APPROACHING_STOP_LINE:
+            State(nac.APPROACHING_STOP_LINE, self.approaching_stopline),
             nac.INTERSECTION_NAVIGATION:
             State(nac.INTERSECTION_NAVIGATION, self.intersection_navigation),
             nac.GOING_STRAIGHT:
@@ -415,8 +415,8 @@ class Brain:
         self.routines = {
             nac.FOLLOW_LANE:
             Routine(nac.FOLLOW_LANE,  self.follow_lane),
-            nac.DETECT_STOPLINE:
-            Routine(nac.DETECT_STOPLINE,  self.detect_stopline),
+            nac.DETECT_STOP_LINE:
+            Routine(nac.DETECT_STOP_LINE,  self.detect_stopline),
             nac.SLOW_DOWN:
             Routine(nac.SLOW_DOWN,  self.slow_down),
             nac.ACCELERATE:
@@ -442,9 +442,6 @@ class Brain:
         self.frame_for_stopline_angle = None
         self.last_run_call = time()
 
-        self.start_node_validated = False
-        self.start_node_validation_time = time()
-
         print('Brain initialized')
         print('Waiting for start semaphore...')
         sleep(3.0)
@@ -458,7 +455,7 @@ class Brain:
 
         # <++>
         start_time = time()
-        while True:
+        while self.car.gps_cnt < 10:
             # get closest node
             curr_time = time()
             curr_pos = np.array([self.car.x_est, self.car.y_est])
@@ -473,8 +470,6 @@ distance: {distance:.2f}')
 too large, we are too far from the lane')
             print(f'Waiting for gps: \
 {(curr_time-start_time):.1f}/{GPS_TIMEOUT}')
-            if len(self.car.x_buffer) >= 5:
-                break
             if curr_time - start_time > GPS_TIMEOUT:
                 print('WARNING: ROUTE_GENERATION: No gps signal, \
 Starting from the first checkpoint')
@@ -484,14 +479,10 @@ Starting from the first checkpoint')
                 break
             # self.car.update_estimated_state()  # <++>
 
-        if bool(self.checkpoints[self.checkpoint_idx] in
-                self.path_planner.intersection_in or
-                self.checkpoints[self.checkpoint_idx] in
-                self.path_planner.ra_enter) ^ \
-           bool(self.detect.detect_stopline(
-                self.car.frame, show_ROI=SHOW_IMGS)[0] < 0.05):
-            # self.checkpoints[self.checkpoint_idx] = hf.switch_lane(self)
-            print("<++>")
+        if (self.checkpoints[self.checkpoint_idx] in
+            self.path_planner.intersection_in or
+            self.checkpoint_idx[self.checkpoint_idx] in
+            self.path_planner.ra_enter) ^ 
 
         self.switch_to_state(nac.START_STATE)
 
@@ -556,12 +547,12 @@ Starting from the first checkpoint')
         # highway conditions
         if self.conditions[nac.HIGHWAY]:
             self.activate_routines([nac.FOLLOW_LANE,
-                                    nac.DETECT_STOPLINE,
+                                    nac.DETECT_STOP_LINE,
                                     nac.CONTROL_FOR_OBSTACLES,
                                     nac.ACCELERATE])
         else:
             self.activate_routines([nac.FOLLOW_LANE,
-                                    nac.DETECT_STOPLINE,
+                                    nac.DETECT_STOP_LINE,
                                     nac.CONTROL_FOR_OBSTACLES,
                                     nac.DRIVE_DESIRED_SPEED])
 
@@ -584,23 +575,6 @@ Starting from the first checkpoint')
         # we are approaching a stopline, check only if we are far enough
         # from the previous stopline
         else:
-            if not self.start_node_validated:
-                if self.curr_state.just_switched:
-                    self.start_node_validation_time = time()
-                    self.curr_state.just_switched = False
-                # if time() - self.start_node_validation_time > 1:
-                closest_node, _ = self.path_planner.get_closest_node(
-                        np.array([self.car.x, self.car.y]))
-                print('CLOSEST NODE: ', closest_node)
-                if closest_node == self.checkpoints[0]:
-                    pass
-                elif closest_node in self.path_planner.route_graph.nodes:
-                    self.start_node_validated = True
-                else:
-                    # hf.switch_lane(self)
-                    print("<++>")
-                    self.start_node_validation_time = time()
-
             if self.conditions[nac.TRUST_GPS]:
                 dist_to_stopline = self.next_event.dist - self.car_dist_on_path
                 if dist_to_stopline >= GPS_STOPLINE_APPROACH_DISTANCE:
@@ -608,20 +582,20 @@ Starting from the first checkpoint')
 {dist_to_stopline-GPS_STOPLINE_APPROACH_DISTANCE:.2f} [m]')
                 elif dist_to_stopline > 0.0:
                     print('Switching to approaching stopline')
-                    self.switch_to_state(nac.APPROACHING_STOPLINE)
+                    self.switch_to_state(nac.APPROACHING_STOP_LINE)
                 else:
                     print('It seems we passed the stopline, or path \
 self intersected.')
             else:
                 far_enough_from_prev_stopline = (self.event_idx == 1) or \
-                        (self.car.dist_loc > STOPLINE_DISTANCE_THRESHOLD)
+                        (self.car.dist_loc > STOP_LINE_DISTANCE_THRESHOLD)
                 if self.prev_event.name is not None:
                     print(f'stop enough: {self.car.dist_loc}')
                 if self.detect.est_dist_to_stopline < \
-                        STOPLINE_APPROACH_DISTANCE and \
+                        STOP_LINE_APPROACH_DISTANCE and \
                         far_enough_from_prev_stopline and \
-                        self.routines[nac.DETECT_STOPLINE].active:
-                    self.switch_to_state(nac.APPROACHING_STOPLINE)
+                        self.routines[nac.DETECT_STOP_LINE].active:
+                    self.switch_to_state(nac.APPROACHING_STOP_LINE)
 
     def lane_following_to_parking(self):                        ## Not a state should be moved somewhere else? or keep comment "not a state"
         dist_between_events = self.next_event.dist - self.prev_event.dist
@@ -637,11 +611,7 @@ self intersected.')
             self.switch_to_state(nac.PARKING)       
 
     def lane_following_to_highway_exit(self):                   ## Not a state should be moved somewhere else? or keep comment "not a state"
-        if self.curr_state.just_switched:
-            self.curr_state.var1 = self.car.encoder_distance
-            self.curr_state.just_switched = False
-
-        if self.conditions[nac.TRUST_GPS]:
+        if self.conditions[nac.TRUST_GPS] or True:
             diff = self.next_event.dist - self.car_dist_on_path
             if diff > 0.1:
                 print(f'Driving toward highway exit: exiting in \
@@ -652,34 +622,11 @@ straight for exiting')
                 self.switch_to_state(nac.GOING_STRAIGHT)
             else:
                 self.error('ERROR: LANE FOLLOWING: Missed Highway exit')
-
         else:
-            diff = self.car.encoder_distance - self.curr_state.var1
-            if diff < 2.8:
-                print(f'Driving toward highway exit: dist so far \
-{diff:.2f} [m]')
-            elif diff < 3.5:
-                print(f'Driving toward highway exit: dist so far \
-{diff:.2f} [m]')
-
-                e3, _ = self.detect.detect_intersection_right(self.car.frame,
-                                                              show_ROI=False)
-                output_speed, output_angle = self.\
-                    controller_sp.get_control_speed(0.0, 0.0, e3)
-                print(f'output_speed: {output_speed:.2f}, output_angle: \
-{np.rad2deg(output_angle):.2f}')
-                self.car.drive(speed=output_speed,
-                               angle=np.rad2deg(output_angle))
-            else:
-                print('Arrived at highway exit, switching to going \
-straight for exiting')
-                self.switch_to_state(nac.END_STATE)
+            # TODO implement this case with signs
+            raise NotImplementedError                                           ##
 
     def lane_following_to_end(self):                            ## Not a state should be moved somewhere else? or keep comment "not a state"
-        if self.curr_state.just_switched:
-            self.curr_state.var1 = self.car.encoder_distance
-            self.curr_state.just_switched = False
-
         self.activate_routines([nac.FOLLOW_LANE,
                                 nac.CONTROL_FOR_OBSTACLES,
                                 nac.DRIVE_DESIRED_SPEED])
@@ -697,23 +644,13 @@ straight for exiting')
             else:
                 self.error('ERROR: LANE FOLLOWING: Missed end')
         else:
-            diff = self.car.encoder_distance - self.curr_state.var1
-            dist_to_end = self.next_event.dist - diff
-            dist_to_end = len(self.path_planner.path)*0.01 - diff
-            if dist_to_end > END_STATE_DISTANCE_THRESHOLD:
-                print(f'Driving toward end: exiting in \
-{dist_to_end:.2f} [m]')
-            elif dist_to_end > -END_STATE_DISTANCE_THRESHOLD:
-                print('Arrived at end, switching to end state')
-                self.switch_to_state(nac.END_STATE)
-            else:
-                self.error('ERROR: LANE FOLLOWING: Missed end')
+            raise NotImplementedError
 
     def approaching_stopline(self):
-        # FOLLOW_LANE, SLOW_DOWN, DETECT_STOPLINE, CONTROL_FOR_OBSTACLES
+        # FOLLOW_LANE, SLOW_DOWN, DETECT_STOP_LINE, CONTROL_FOR_OBSTACLES
         self.activate_routines([nac.FOLLOW_LANE,
                                 nac.SLOW_DOWN,
-                                nac.DETECT_STOPLINE,
+                                nac.DETECT_STOP_LINE,
                                 nac.CONTROL_FOR_OBSTACLES])
 
         if self.curr_state.just_switched:
@@ -777,7 +714,7 @@ dist: {dist_to_stopline}')
     def approaching_stopline_vision(self):
         dist = self.detect.est_dist_to_stopline
         # #check if we are here by mistake
-        if dist > STOPLINE_APPROACH_DISTANCE:
+        if dist > STOP_LINE_APPROACH_DISTANCE:
             self.switch_to_state(nac.LANE_FOLLOWING)
             return False                                                    ## Why return false ??
         # we have a median => we have an accurate position for the stopline
@@ -789,7 +726,7 @@ dist: {dist_to_stopline}')
             dist_to_drive = self.stopline_distance_median - \
                 self.car.encoder_distance
             self.car.drive_distance(dist_to_drive)
-            if dist_to_drive < STOPLINE_STOP_DISTANCE:
+            if dist_to_drive < STOP_LINE_STOP_DISTANCE:
                 print(f'Arrievd at stop line. Using median distance: \
 {self.stopline_distance_median}')
                 print(f'                           encoder distance: \
@@ -801,9 +738,9 @@ dist: {dist_to_stopline}')
         # alternative, if we don't have a median, we just use the
         # (possibly inaccurate) network estimaiton
         else:
-            print('WARNING: APPROACHING_STOPLINE: stop distance may \
+            print('WARNING: APPROACHING_STOP_LINE: stop distance may \
 be imprecise')
-            if dist < STOPLINE_STOP_DISTANCE:
+            if dist < STOP_LINE_STOP_DISTANCE:
                 print('Stopped at stop line. Using network distance: ',
                       self.detect.est_dist_to_stopline)
                 decide_next_state = True
@@ -840,7 +777,6 @@ be imprecise')
 
     def tracking_local_path(self):
         # var1=initial distance from stopline, #var2=path to follow
-        # var3=local path, #var4=intersection direction
         print('State: tracking_local_path')
         self.activate_routines([nac.DRIVE_DESIRED_SPEED])
         if self.curr_state.just_switched:
@@ -864,23 +800,29 @@ be imprecise')
                     car_position_slf = -np.array([x_dist, y_dist])
                 print('Car position in stop line frame: ', car_position_slf)
             else:
-                ##                                                  stopline_x and stopline_angle seems not used
-                stopline_x, stopline_y, stopline_angle = \
-                        self.detect.detect_stopline(self.car.frame,
-                                                    show_ROI=SHOW_IMGS)
-                e2 = stopline_y
+                if USE_ADVANCED_NETWORK_FOR_STOPLINES:
+                    ##                                                  stopline_x and stopline_angle seems not used
+                    stopline_x, stopline_y, stopline_angle = \
+                            self.detect.detect_stopline2(self.car.frame,
+                                                          show_ROI=SHOW_IMGS)
+                    e2 = stopline_y
+                else:
+                    self.detect.detect_stopline(self.car.frame, SHOW_IMGS)
+                    e2, _, _ = self.detect.detect_lane(self.car.frame,
+                                                       SHOW_IMGS)
+                    e2 = 0.0  # NOTE e2 is usually bad
                 if self.stopline_distance_median is not None:
                     print('We HAVE the median, using median estimation')
-                    print(len(self.routines[nac.DETECT_STOPLINE].var2))
+                    print(len(self.routines[nac.DETECT_STOP_LINE].var2))
                     d = self.stopline_distance_median - \
                         self.car.encoder_distance
                 # we do not have an accurate position for the stopline
                 else:
                     print('We DONT have the median, using \
 simple net estimation')
-                    print(len(self.routines[nac.DETECT_STOPLINE].var2))
+                    print(len(self.routines[nac.DETECT_STOP_LINE].var2))
                     if self.detect.est_dist_to_stopline < \
-                            STOPLINE_APPROACH_DISTANCE:
+                            STOP_LINE_APPROACH_DISTANCE:
                         d = self.detect.est_dist_to_stopline
                     else:
                         d = 0.0
@@ -926,9 +868,6 @@ better aligned, alpha = {alpha}'
             self.car.reset_rel_pose()
             self.curr_state.just_switched = False
 
-            if self.next_event.name.startswith('intersection'):
-                hf.determine_intersection_direction(self, local_path_cf)
-
             hf.show_local_path_just_switched(self, alpha, stopline_yaw,
                                              car_position_slf, local_path_cf,
                                              stopline_position, SHOW_IMGS)
@@ -958,23 +897,22 @@ better aligned, alpha = {alpha}'
         else:  # curvy path
             max_idx = len(local_path_cf)-1  # follow until the end
             print('curvy')
-
         # State exit conditions
-        if self.next_event.name.startswith("junction"):
-            max_idx = max_idx * 0.7
         if idx_point_ahead >= max_idx:  # we reached the end of the path
             self.switch_to_state(nac.LANE_FOLLOWING)
             self.go_to_next_event()
-        elif self.next_event.name.startswith("intersection"):
-            hf.navigate_intersection(self, SHOW_IMGS)
-        elif self.next_event.name.startswith("roundabout"):
-            hf.navigate_roundabout(self, idx_point_ahead, max_idx, SHOW_IMGS)
         else:  # we are still on the path
-            hf.navigate_open_loop(self,
-                                  local_path_cf,
-                                  idx_point_ahead,
-                                  idx_car_on_path,
-                                  SHOW_IMGS)
+            point_ahead = local_path_cf[idx_point_ahead]
+            hf.show_brain_debug(self, local_path_cf, point_ahead, SHOW_IMGS)
+
+            # k1,k2,k3,k3D
+            gains = [0.0, .0, 1.2, 0.0]
+            e2 = local_path_cf[idx_car_on_path][1]
+            yaw_error = np.arctan2(point_ahead[1], point_ahead[0])
+            out_speed, out_angle = self.\
+                controller.get_control(e2, yaw_error, 0.0,
+                                       self.desired_speed, gains=gains)
+            self.car.drive(out_speed, np.rad2deg(out_angle))
 
     def roundabout_navigation(self):                            ## not really usefull
         self.switch_to_state(nac.TRACKING_LOCAL_PATH)
@@ -1858,25 +1796,29 @@ error:{overshoot_distance:.2f}')
 
     def detect_stopline(self):
         # update the variable self.detect.est_dist_to_stopline
-        stopline_x, _, _ = self.detect.detect_stopline(
-            self.car.frame, show_ROI=SHOW_IMGS)
-        dist = stopline_x + 0.05
+        if USE_ADVANCED_NETWORK_FOR_STOPLINES:
+            stopline_x, _, _ = self.detect.detect_stopline2(
+                    self.car.frame, show_ROI=SHOW_IMGS)
+            dist = stopline_x + 0.05
+        else:
+            dist = self.detect.detect_stopline(self.car.frame,
+                                                show_ROI=SHOW_IMGS)
 
-        past_detections = self.routines[nac.DETECT_STOPLINE].var2
+        past_detections = self.routines[nac.DETECT_STOP_LINE].var2
         # -0.1 #network is more accurate in this range
-        if dist < STOPLINE_APPROACH_DISTANCE-0.05:
+        if dist < STOP_LINE_APPROACH_DISTANCE-0.05:
             DETECTION_DEQUE_LENGTH = 50                             ## move to nac?
             SAMPLE_BEFORE_CONFIDENCE = 20                           ## move to nac?
             # var1 holds last detection time
-            if self.routines[nac.DETECT_STOPLINE].var1 is not None:
-                last_detection_time = self.routines[nac.DETECT_STOPLINE].var1
+            if self.routines[nac.DETECT_STOP_LINE].var1 is not None:
+                last_detection_time = self.routines[nac.DETECT_STOP_LINE].var1
             else:
                 last_detection_time = time() - 1.0
             curr_time = time()
 
             if curr_time - last_detection_time > 0.5:
                 # var2 holds the list of past detections, reset
-                self.routines[nac.DETECT_STOPLINE].var2 = past_detections = \
+                self.routines[nac.DETECT_STOP_LINE].var2 = past_detections = \
                         deque(maxlen=DETECTION_DEQUE_LENGTH)
 
             adapted_distance = dist + self.car.encoder_distance
@@ -1887,7 +1829,7 @@ error:{overshoot_distance:.2f}')
                 self.stopline_distance_median = np.median(past_detections)
             else:
                 self.stopline_distance_median = None
-            self.routines[nac.DETECT_STOPLINE].var1 = curr_time
+            self.routines[nac.DETECT_STOP_LINE].var1 = curr_time
         else:
             self.stopline_distance_median = None
 
@@ -2036,22 +1978,11 @@ error:{overshoot_distance:.2f}')
                             norm(self.path_planner.path - est_pos,
                                  axis=1))*0.01
                     self.car_dist_on_path += dist_delay_increment
-        else:
-            # aposifjanwlkerhqwe;lrhoqweifeihqkugik
-            was_bumpy = self.conditions[nac.BUMPY_ROAD]
-            self.conditions[nac.BUMPY_ROAD] = str(self.checkpoints[
-                self.checkpoint_idx]) \
-                in self.path_planner.bumpy_road_nodes
-            if self.conditions[nac.BUMPY_ROAD] and not was_bumpy:
-                self.env.publish_obstacle(nac.BUMPY_ROAD,
-                                          self.car.x_est,
-                                          self.car.y_est)
 
     # ===================== STATE MACHINE MANAGEMENT ===================== #
     def run(self):
         print('===============================================================\
 ===========')
-        print(f'CHECKPOINT:     {self.checkpoints[self.checkpoint_idx]}')
         print(f'STATE:          {self.curr_state}')
         print(f'UPCOMING_EVENT: {self.next_event}')
         print(f'ROUTINES:    {self.active_routines_names+ALWAYS_ON_ROUTINES}')

@@ -10,25 +10,18 @@ import names_and_constants as nac
 from stopline import detect_angle
 
 LANE_KEEPER_PATH = "models/lane_keeper_small.onnx"
-# LANE_KEEPER_PATH = "models/round_about8001.onnx"
 # avg right -0.17356677295197556
+# LANE_KEEPER_PATH = "models/forward.onnx"
 DISTANCE_POINT_AHEAD = 0.35
 CAR_LENGTH = 0.4
 
 LANE_KEEPER_AHEAD_PATH = "models/lane_keeper_ahead.onnx"
-# LANE_KEEPER_AHEAD_PATH = "models/round_about8001.onnx"
-INTERSECTION_NAVIGATOR_RIGHT = "models/right.onnx"
-INTERSECTION_NAVIGATOR_LEFT = "models/left.onnx"
-INTERSECTION_NAVIGATOR_FORWARD = "models/forward.onnx"
-ROUNDABOUT_NAVIGATOR_IN = "models/round_in.onnx"
-ROUNDABOUT_NAVIGATOR_ABOUT = "models/round_about8001.onnx"
-ROUNDABOUT_NAVIGATOR_OUT = "models/round_out.onnx"
-# LANE_KEEPER_AHEAD_PATH = "models/round_in.onnx"
+# LANE_KEEPER_AHEAD_PATH = "models/forward.onnx"
 DISTANCE_POINT_AHEAD_AHEAD = 0.6
 
-STOPLINE_ESTIMATOR_PATH = "models/stopline_estimator.onnx"
+STOP_LINE_ESTIMATOR_PATH = "models/stopline_estimator.onnx"
 
-STOPLINE_ESTIMATOR_ADV_PATH = "models/stopline_estimator_advanced.onnx"
+STOP_LINE_ESTIMATOR_ADV_PATH = "models/stopline_estimator_advanced.onnx"
 PREDICTION_OFFSET = -0.08
 
 # SIGN_CLASSIFIER_PATH = 'models/sign_classifier.onnx'
@@ -82,52 +75,16 @@ class Detection:
         self.lane_ahead_cnt = 0
         self.avg_lane_ahead_detection_time = 0
 
-        # intersection right
-        self.intersection_navigator_right = cv.dnn.\
-            readNetFromONNX(INTERSECTION_NAVIGATOR_RIGHT)
-        self.intersection_right_cnt = 0
-        self.avg_intersection_right_detection_time = 0
-
-        # intersection left
-        self.intersection_navigator_left = cv.dnn.\
-            readNetFromONNX(INTERSECTION_NAVIGATOR_LEFT)
-        self.intersection_left_cnt = 0
-        self.avg_intersection_left_detection_time = 0
-
-        # intersection forward
-        self.intersection_navigator_forward = cv.dnn.\
-            readNetFromONNX(INTERSECTION_NAVIGATOR_FORWARD)
-        self.intersection_forward_cnt = 0
-        self.avg_intersection_forward_detection_time = 0
-
-        # roundabout in
-        self.roundabout_navigator_in = cv.dnn.\
-            readNetFromONNX(ROUNDABOUT_NAVIGATOR_IN)
-        self.roundabout_in_cnt = 0
-        self.avg_roundabout_in_detection_time = 0
-
-        # roundabout about
-        self.roundabout_navigator_about = cv.dnn.\
-            readNetFromONNX(ROUNDABOUT_NAVIGATOR_ABOUT)
-        self.roundabout_about_cnt = 0
-        self.avg_roundabout_about_detection_time = 0
-
-        # roundabout out
-        self.roundabout_navigator_out = cv.dnn.\
-            readNetFromONNX(ROUNDABOUT_NAVIGATOR_OUT)
-        self.roundabout_out_cnt = 0
-        self.avg_roundabout_out_detection_time = 0
-
         # stop line detection
         self.stopline_estimator = cv.dnn.readNetFromONNX(
-                STOPLINE_ESTIMATOR_PATH)
+                STOP_LINE_ESTIMATOR_PATH)
         self.est_dist_to_stopline = 1.0
         self.avg_stopline_detection_time = 0
         self.stopline_cnt = 0
 
         # stop line detection advanced
         self.stopline_estimator_adv = cv.dnn.readNetFromONNX(
-                STOPLINE_ESTIMATOR_ADV_PATH)
+                STOP_LINE_ESTIMATOR_ADV_PATH)
         self.est_dist_to_stopline_adv = 1.0
         self.avg_stopline_detection_adv_time = 0
         self.stopline_adv_cnt = 0
@@ -278,262 +235,51 @@ class Detection:
         est_point_ahead = np.array([np.cos(e3)*d, np.sin(e3)*d])
 
         lane_detection_time = 1000*(time()-start_time)
-        self.avg_lane_ahead_detection_time = \
-            (self.avg_lane_ahead_detection_time*self.lane_ahead_cnt +
-                lane_detection_time) / (self.lane_ahead_cnt+1)
-        self.lane_ahead_cnt += 1
-        if show_ROI:
-            cv.imshow('lane_detection', frame)
-            # cv.waitKey(1)
-        return e3, est_point_ahead
-
-    def detect_intersection_right(self, frame, show_ROI=True, faster=False):
-        """
-        Estimates:
-        - the angular error around the yaw axis wrt a fixed point ahead (e3),
-        - the ditance from the next stop line (1/dist)
-        """
-        start_time = time()
-        IMG_SIZE = (32, 32)  # match with trainer
-        # convert to gray
-        frame = cv.cvtColor(frame, cv.COLOR_BGR2GRAY)
-        frame = frame[int(frame.shape[0]/3):, :]  # /3
-        # keep the bottom 2/3 of the image
-        frame = cv.resize(frame, (2*IMG_SIZE[0], 2*IMG_SIZE[1]))
-        frame = cv.Canny(frame, 100, 200)
-        frame = cv.blur(frame, (3, 3), 0)  # worse than blur after 11,11
-        frame = cv.resize(frame, IMG_SIZE)
-
-        images = frame
-
-        blob = cv.dnn.blobFromImage(images, 1.0, IMG_SIZE, 0,
-                                    swapRB=True, crop=False)
-        self.intersection_navigator_right.setInput(blob)
-        out = self.intersection_navigator_right.forward()
-        output = out[0]
-        e3 = output[0]
-
-        # calculate estimated of thr point ahead to get visual feedback
-        d = DISTANCE_POINT_AHEAD_AHEAD
-        est_point_ahead = np.array([np.cos(e3)*d, np.sin(e3)*d])
-
-        lane_detection_time = 1000*(time()-start_time)
-        self.avg_intersection_right_detection_time = \
-            (self.avg_intersection_right_detection_time *
-             self.intersection_right_cnt +
-             lane_detection_time) / (self.intersection_right_cnt+1)
-        self.intersection_right_cnt += 1
-        if show_ROI:
-            cv.imshow('lane_detection', frame)
-            # cv.waitKey(1)
-        return e3, est_point_ahead
-
-    def detect_intersection_left(self, frame, show_ROI=True, faster=False):
-        """
-        Estimates:
-        - the angular error around the yaw axis wrt a fixed point ahead (e3),
-        - the ditance from the next stop line (1/dist)
-        """
-        start_time = time()
-        IMG_SIZE = (32, 32)  # match with trainer
-        # convert to gray
-        frame = cv.cvtColor(frame, cv.COLOR_BGR2GRAY)
-        frame = frame[int(frame.shape[0]/3):, :]  # /3
-        # keep the bottom 2/3 of the image
-        frame = cv.resize(frame, (2*IMG_SIZE[0], 2*IMG_SIZE[1]))
-        frame = cv.Canny(frame, 100, 200)
-        frame = cv.blur(frame, (3, 3), 0)  # worse than blur after 11,11
-        frame = cv.resize(frame, IMG_SIZE)
-
-        images = frame
-
-        blob = cv.dnn.blobFromImage(images, 1.0, IMG_SIZE, 0,
-                                    swapRB=True, crop=False)
-        self.intersection_navigator_left.setInput(blob)
-        out = self.intersection_navigator_left.forward()
-        output = out[0]
-        e3 = output[0]
-
-        # calculate estimated of thr point ahead to get visual feedback
-        d = DISTANCE_POINT_AHEAD_AHEAD
-        est_point_ahead = np.array([np.cos(e3)*d, np.sin(e3)*d])
-
-        lane_detection_time = 1000*(time()-start_time)
-        self.avg_intersection_left_detection_time = \
-            (self.avg_intersection_left_detection_time *
-             self.intersection_left_cnt +
-             lane_detection_time) / (self.intersection_left_cnt+1)
-        self.intersection_left_cnt += 1
-        if show_ROI:
-            cv.imshow('lane_detection', frame)
-            # cv.waitKey(1)
-        return e3, est_point_ahead
-
-    def detect_intersection_forward(self, frame, show_ROI=True):
-        """
-        Estimates:
-        - the angular error around the yaw axis wrt a fixed point ahead (e3),
-        - the ditance from the next stop line (1/dist)
-        """
-        start_time = time()
-        IMG_SIZE = (32, 32)  # match with trainer
-        # convert to gray
-        frame = cv.cvtColor(frame, cv.COLOR_BGR2GRAY)
-        frame = frame[int(frame.shape[0]/3):, :]  # /3
-        # keep the bottom 2/3 of the image
-        frame = cv.resize(frame, (2*IMG_SIZE[0], 2*IMG_SIZE[1]))
-        frame = cv.Canny(frame, 100, 200)
-        frame = cv.blur(frame, (3, 3), 0)  # worse than blur after 11,11
-        frame = cv.resize(frame, IMG_SIZE)
-
-        images = frame
-
-        blob = cv.dnn.blobFromImage(images, 1.0, IMG_SIZE, 0,
-                                    swapRB=True, crop=False)
-        self.intersection_navigator_forward.setInput(blob)
-        out = self.intersection_navigator_forward.forward()
-        output = out[0]
-        e3 = output[0]
-
-        # calculate estimated of thr point ahead to get visual feedback
-        d = DISTANCE_POINT_AHEAD_AHEAD
-        est_point_ahead = np.array([np.cos(e3)*d, np.sin(e3)*d])
-
-        lane_detection_time = 1000*(time()-start_time)
-        self.avg_intersection_forward_detection_time = \
-            (self.avg_intersection_forward_detection_time *
-             self.intersection_forward_cnt +
-             lane_detection_time) / (self.intersection_forward_cnt+1)
-        self.intersection_forward_cnt += 1
-        if show_ROI:
-            cv.imshow('lane_detection', frame)
-            # cv.waitKey(1)
-        return e3, est_point_ahead
-
-    def detect_roundabout_in(self, frame, show_ROI=True):
-        """
-        Estimates:
-        - the angular error around the yaw axis wrt a fixed point ahead (e3),
-        - the ditance from the next stop line (1/dist)
-        """
-        start_time = time()
-        IMG_SIZE = (32, 32)  # match with trainer
-        # convert to gray
-        frame = cv.cvtColor(frame, cv.COLOR_BGR2GRAY)
-        frame = frame[int(frame.shape[0]/3):, :]  # /3
-        # keep the bottom 2/3 of the image
-        frame = cv.resize(frame, (2*IMG_SIZE[0], 2*IMG_SIZE[1]))
-        frame = cv.Canny(frame, 100, 200)
-        frame = cv.blur(frame, (3, 3), 0)  # worse than blur after 11,11
-        frame = cv.resize(frame, IMG_SIZE)
-
-        images = frame
-
-        blob = cv.dnn.blobFromImage(images, 1.0, IMG_SIZE, 0,
-                                    swapRB=True, crop=False)
-        self.roundabout_navigator_in.setInput(blob)
-        out = self.roundabout_navigator_in.forward()
-        output = out[0]
-        e3 = output[0]
-
-        # calculate estimated of thr point ahead to get visual feedback
-        d = DISTANCE_POINT_AHEAD_AHEAD
-        est_point_ahead = np.array([np.cos(e3)*d, np.sin(e3)*d])
-
-        lane_detection_time = 1000*(time()-start_time)
-        self.avg_roundabout_in_detection_time = \
-            (self.avg_roundabout_in_detection_time *
-             self.roundabout_in_cnt +
-             lane_detection_time) / (self.roundabout_in_cnt+1)
-        self.roundabout_in_cnt += 1
-        if show_ROI:
-            cv.imshow('lane_detection', frame)
-            # cv.waitKey(1)
-        return e3, est_point_ahead
-
-    def detect_roundabout_about(self, frame, show_ROI=True):
-        """
-        Estimates:
-        - the angular error around the yaw axis wrt a fixed point ahead (e3),
-        - the ditance from the next stop line (1/dist)
-        """
-        start_time = time()
-        IMG_SIZE = (32, 32)  # match with trainer
-        # convert to gray
-        frame = cv.cvtColor(frame, cv.COLOR_BGR2GRAY)
-        frame = frame[int(frame.shape[0]/3):, :]  # /3
-        # keep the bottom 2/3 of the image
-        frame = cv.resize(frame, (2*IMG_SIZE[0], 2*IMG_SIZE[1]))
-        frame = cv.Canny(frame, 100, 200)
-        frame = cv.blur(frame, (3, 3), 0)  # worse than blur after 11,11
-        frame = cv.resize(frame, IMG_SIZE)
-
-        images = frame
-
-        blob = cv.dnn.blobFromImage(images, 1.0, IMG_SIZE, 0,
-                                    swapRB=True, crop=False)
-        self.roundabout_navigator_about.setInput(blob)
-        out = self.roundabout_navigator_about.forward()
-        output = out[0]
-        e3 = output[0]
-
-        # calculate estimated of thr point ahead to get visual feedback
-        d = DISTANCE_POINT_AHEAD_AHEAD
-        est_point_ahead = np.array([np.cos(e3)*d, np.sin(e3)*d])
-
-        lane_detection_time = 1000*(time()-start_time)
-        self.avg_roundabout_about_detection_time = \
-            (self.avg_roundabout_about_detection_time *
-             self.roundabout_about_cnt +
-             lane_detection_time) / (self.roundabout_about_cnt+1)
-        self.roundabout_about_cnt += 1
-        if show_ROI:
-            cv.imshow('lane_detection', frame)
-            # cv.waitKey(1)
-        return e3, est_point_ahead
-
-    def detect_roundabout_out(self, frame, show_ROI=True):
-        """
-        Estimates:
-        - the angular error around the yaw axis wrt a fixed point ahead (e3),
-        - the ditance from the next stop line (1/dist)
-        """
-        start_time = time()
-        IMG_SIZE = (32, 32)  # match with trainer
-        # convert to gray
-        frame = cv.cvtColor(frame, cv.COLOR_BGR2GRAY)
-        frame = frame[int(frame.shape[0]/3):, :]  # /3
-        # keep the bottom 2/3 of the image
-        frame = cv.resize(frame, (2*IMG_SIZE[0], 2*IMG_SIZE[1]))
-        frame = cv.Canny(frame, 100, 200)
-        frame = cv.blur(frame, (3, 3), 0)  # worse than blur after 11,11
-        frame = cv.resize(frame, IMG_SIZE)
-
-        images = frame
-
-        blob = cv.dnn.blobFromImage(images, 1.0, IMG_SIZE, 0,
-                                    swapRB=True, crop=False)
-        self.roundabout_navigator_out.setInput(blob)
-        out = self.roundabout_navigator_out.forward()
-        output = out[0]
-        e3 = output[0]
-
-        # calculate estimated of thr point ahead to get visual feedback
-        d = DISTANCE_POINT_AHEAD_AHEAD
-        est_point_ahead = np.array([np.cos(e3)*d, np.sin(e3)*d])
-
-        lane_detection_time = 1000*(time()-start_time)
-        self.avg_roundabout_out_detection_time = \
-            (self.avg_roundabout_out_detection_time *
-             self.roundabout_out_cnt +
-             lane_detection_time) / (self.roundabout_out_cnt+1)
-        self.roundabout_out_cnt += 1
+        self.avg_lane_detection_time = \
+            (self.avg_lane_detection_time*self.lane_cnt +
+                lane_detection_time) / (self.lane_cnt+1)
+        self.lane_cnt += 1
         if show_ROI:
             cv.imshow('lane_detection', frame)
             # cv.waitKey(1)
         return e3, est_point_ahead
 
     def detect_stopline(self, frame, show_ROI=True):
+        """
+        Estimates the distance to the next stop line
+        """
+        start_time = time()
+        IMG_SIZE = (32, 32)  # match with trainer
+        # convert to gray
+        frame = cv.cvtColor(frame, cv.COLOR_BGR2GRAY)
+        frame = frame[0:int(frame.shape[0]*(2/5)):, :]
+        # keep the bottom 2/3 of the image
+        frame = cv.resize(frame, (2*IMG_SIZE[0], 2*IMG_SIZE[1]))
+        frame = cv.Canny(frame, 100, 200)
+        frame = cv.blur(frame, (5, 5), 0)
+        frame = cv.resize(frame, IMG_SIZE)
+
+        blob = cv.dnn.blobFromImage(frame, 1.0, IMG_SIZE, 0, swapRB=True,
+                                    crop=False)
+        self.stopline_estimator.setInput(blob)
+        output = self.stopline_estimator.forward()
+        dist = output[0][0]
+
+        self.est_dist_to_stopline = dist
+
+        stopline_detection_time = 1000*(time()-start_time)
+        self.avg_stopline_detection_time = \
+            (self.avg_stopline_detection_time*self.lane_cnt +
+             stopline_detection_time) / (self.lane_cnt+1)
+        self.lane_cnt += 1
+        if show_ROI:
+            cv.imshow('stopline_detection', frame)
+            # cv.waitKey(1)
+        print(f"stopline_detection dist: {dist:.2f}, in \
+                {stopline_detection_time:.2f} ms")
+        return dist
+
+    def detect_stopline2(self, frame, show_ROI=True):
         """
         Estimates the distance to the next stop line
         """

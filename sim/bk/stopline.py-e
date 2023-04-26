@@ -76,7 +76,7 @@ class StopLine:
 
         # Best fit polynomial lines for left line and right line of the lane
         self.line_fit = None
-        self.stopline_inds = None
+        self.stop_line_inds = None
         self.plotx = None
         self.line_fity = None
         self.linex = None
@@ -143,7 +143,7 @@ class StopLine:
         nonzerox = np.array(nonzero[1])
 
         # Store the pixel indices for the left and right lane lines
-        stopline_inds = []
+        stop_line_inds = []
 
         # Current positions for pixel indices for each window,
         # which we will continue to update
@@ -174,7 +174,7 @@ class StopLine:
                          (nonzerox < win_x_high)).nonzero()[0]
 
             # Append these indices to the lists
-            stopline_inds.append(good_inds)
+            stop_line_inds.append(good_inds)
 
             # If you found > minpix pixels, recenter next
             # window on mean position
@@ -183,11 +183,11 @@ class StopLine:
                 y_current = int(np.mean(nonzeroy[good_inds]))
 
         # Concatenate the arrays of indices
-        stopline_inds = np.concatenate(stopline_inds)
+        stop_line_inds = np.concatenate(stop_line_inds)
 
         # Extract the pixel coordinates for the left and right lane lines
-        linex = nonzerox[stopline_inds]
-        liney = nonzeroy[stopline_inds]
+        linex = nonzerox[stop_line_inds]
+        liney = nonzeroy[stop_line_inds]
 
         # Fit a second order polynomial curve to the pixel coordinates for
         # the left and right lane lines
@@ -209,8 +209,8 @@ class StopLine:
                                  (frame_sliding_window))) * 255
 
             # Add color to the left line pixels and right line pixels
-            out_img[nonzeroy[stopline_inds],
-                    nonzerox[stopline_inds]] = [255, 0, 0]
+            out_img[nonzeroy[stop_line_inds],
+                    nonzerox[stop_line_inds]] = [255, 0, 0]
 
             # Plot the figure with the sliding windows
             figure, (ax1, ax2, ax3) = plt.subplots(3, 1)  # 3 rows, 1 column
