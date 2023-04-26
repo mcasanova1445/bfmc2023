@@ -17,8 +17,9 @@ from controller3 import Controller
 from controllerSP import ControllerSpeed
 from detection import Detection
 from environmental_data_simulator import EnvironmentalData
-
+from obstacle2 import Obstacle
 import helper_functions as hf
+
 
 SHOW_IMGS = False
 
@@ -36,6 +37,21 @@ CHECKPOINTS = [86, 430, 193, 141, 346, 85]  # complete track
 SPEED_CHALLENGE = False
 
 ALWAYS_USE_VISION_FOR_STOPLINES = True
+
+# Templates for obstacle detection
+num_tem = 10
+tem = []
+tem.append(cv.imread("templates/car1.png"))
+tem.append(cv.imread("templates/car2.png"))
+tem.append(cv.imread("templates/car3.png"))
+tem.append(cv.imread("templates/car4.png"))
+tem.append(cv.imread("templates/car5.png"))
+tem.append(cv.imread("templates/rb1.png"))
+tem.append(cv.imread("templates/rb2.png"))
+tem.append(cv.imread("templates/rb3.png"))
+tem.append(cv.imread("templates/rb4.png"))
+tem.append(cv.imread("templates/rb5.png"))
+obs = Obstacle(tem,num_tem)
 
 
 class State():
@@ -1790,24 +1806,31 @@ error:{overshoot_distance:.2f}')
                     OBSTACLE_IMGS_CAPTURE_STOP_DISTANCE)
             print(f'Captured {len(frames)} imgs, running classification...')
             # forcing the classification
-            obstacle = None
-            if self.conditions[nac.CAN_OVERTAKE]:
-                obstacle = nac.CAR
-            elif self.conditions[nac.BUMPY_ROAD]:
-                obstacle = nac.CAR
-            else:  # we cannot overtake and we are NOT in a bumpy road
-                obstacle = nac.PEDESTRIAN
+            frame = self.car.frame
+            img = frame.copy()
+            img = cv.cvtColor(img, cv.COLOR_BGR2GRAY)
+            img = img[40:120,105:215]
+            cv.imwrite('test.png', img)
+            obstacle = obs.detect_obstacle(cv.imread("test.png"))
 
-            # check for roadblock
-            closest_node, dist_closest = self.path_planner.get_closest_node(
-                    np.array([self.car.x_est, self.car.y_est]))
+            ### Previous logic for obstacle classfification
 
-            print(f'Closest node: {closest_node}, dist={dist_closest:.2f}')
-            print(f'Car pos= {(self.car.x_est, self.car.y_est)}')
-            print(f'coords = {self.path_planner.get_coord(closest_node)}')
-            if closest_node in RB_NODES_LEFT_LANE or closest_node in \
-                    RB_NODES_RIGHT_LANE:
-                obstacle = nac.ROADBLOCK
+            # if self.conditions[nac.CAN_OVERTAKE]:
+            #     obstacle = nac.CAR
+            # elif self.conditions[nac.BUMPY_ROAD]:
+            #     obstacle = nac.CAR
+            # else:  # we cannot overtake and we are NOT in a bumpy road
+            #     obstacle = nac.PEDESTRIAN
+            # # check for roadblock
+            # closest_node, dist_closest = self.path_planner.get_closest_node(
+            #         np.array([self.car.x_est, self.car.y_est]))
+
+            # print(f'Closest node: {closest_node}, dist={dist_closest:.2f}')
+            # print(f'Car pos= {(self.car.x_est, self.car.y_est)}')
+            # print(f'coords = {self.path_planner.get_coord(closest_node)}')
+            # if closest_node in RB_NODES_LEFT_LANE or closest_node in \
+            #         RB_NODES_RIGHT_LANE:
+            #     obstacle = nac.ROADBLOCK
 
             print(f'Obstacle: {obstacle}')
             if OBSTACLE_IS_ALWAYS_CAR:
@@ -1950,11 +1973,15 @@ error:{overshoot_distance:.2f}')
             curr_dist = self.car.encoder_distance
             if curr_dist - last_obstacle_dist > MIN_DIST_BETWEEN_OBSTACLES:
                 dist = self.car.filtered_sonar_distance
-                if dist < OBSTACLE_DISTANCE_THRESHOLD + 0.1:
-                    self.car.drive_speed(self.desired_speed*0.2)
-                if dist < OBSTACLE_DISTANCE_THRESHOLD:
+
+                if dist < OBSTACLE_DISTANCE_THRESHOLD - 0.05:
+                    self.car.drive_speed(speed=self.desired_speed/10)
+                    #print('detecting obstacle ...')
+                    #print(f'sonar distance: {self.car.filtered_sonar_distance}')
+                    
                     self.switch_to_state(nac.CLASSIFYING_OBSTACLE)
                     self.routines[nac.CONTROL_FOR_OBSTACLES].var1 = curr_dist
+
 
     def drive_desired_speed(self):
         if np.abs(self.car.filtered_encoder_velocity - self.desired_speed) > \
