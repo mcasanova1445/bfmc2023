@@ -492,9 +492,11 @@ def navigate_intersection(brain, show):
     if brain.curr_state.var4 == "right":
         e3, _ = brain.detect.detect_intersection_right(brain.car.frame,
                                                        show_ROI=show)
+        e3 = 1.1 * e3
     elif brain.curr_state.var4 == "left":
         e3, _ = brain.detect.detect_intersection_left(brain.car.frame,
                                                       show_ROI=show)
+        e3 = 0.95 * e3
     elif brain.curr_state.var4 == "forward":
         e3, _ = brain.detect.detect_intersection_forward(brain.car.frame,
                                                          show_ROI=show)
@@ -527,18 +529,33 @@ def navigate_open_loop(brain,
 
 
 def navigate_roundabout(brain, idx_point_ahead, max_idx, show):
-    if max_idx - idx_point_ahead < 1:
+    if max_idx - idx_point_ahead < 5:
         print("\nAHEAD AHEAD AHEAD AHEAD AHEAD AHEAD AHEAD AHEAD AHEAD\n")
         e3, _ = brain.detect.detect_lane_ahead(brain.car.frame,
                                                show_ROI=show)
         output_speed, output_angle = brain.controller_sp.get_control_speed(
                 0.0, 0.0, e3)
-    elif max_idx - idx_point_ahead < 75:
+    # elif max_idx - idx_point_ahead < 75:
+    elif max_idx - idx_point_ahead < 60:
         print("\nOUT OUT OUT OUT OUT OUT OUT OUT OUT OUT\n")
         e3, _ = brain.detect.detect_roundabout_out(brain.car.frame,
                                                    show_ROI=show)
+        # e3, _ = brain.detect.detect_intersection_right(brain.car.frame,
+        #                                                show_ROI=show)
         output_speed, output_angle = brain.controller_sp.get_control_speed(
-                0.0, e3, 1.2*e3)
+                0.0, e3, 1.5*e3)
+    # elif idx_point_ahead < 15:
+    #     print("\nIN IN IN IN IN IN IN IN IN IN\n")
+    #     e3, _ = brain.detect.detect_lane_ahead(brain.car.frame,
+    #                                            show_ROI=show)
+    #     output_speed, output_angle = brain.controller_sp.get_control_speed(
+    #             0.0, 0.0, 0.8*e3)
+    # elif idx_point_ahead < 70:
+    #     print("\nIN IN IN IN IN IN IN IN IN IN\n")
+    #     e3, _ = brain.detect.detect_intersection_right(brain.car.frame,
+    #                                                    show_ROI=show)
+    #     output_speed, output_angle = brain.controller_sp.get_control_speed(
+    #             0.0, 0.75*e3, e3)
     elif idx_point_ahead < 30:
         print("\nIN IN IN IN IN IN IN IN IN IN\n")
         e3, _ = brain.detect.detect_roundabout_in(brain.car.frame,
@@ -561,22 +578,25 @@ def navigate_roundabout(brain, idx_point_ahead, max_idx, show):
         print("\nABOUT ABOUT ABOUT ABOUT ABOUT ABOUT ABOUT ABOUT ABOUT\n")
         e3, _ = brain.detect.detect_roundabout_about(brain.car.frame,
                                                      show_ROI=show)
+        brain.curr_state.var4 = 0.3 * brain.curr_state.var4 + 0.7 * e3
         output_speed, output_angle = brain.controller_sp.get_control_speed(
-                0.0, 0.0, e3)
-    elif idx_point_ahead < 150:
+                0.0, 0.0, brain.curr_state.var4)
+    elif idx_point_ahead < 260:
         print("\nABOUT ABOUT ABOUT ABOUT ABOUT ABOUT ABOUT ABOUT ABOUT\n")
         e3, _ = brain.detect.detect_roundabout_about(brain.car.frame,
                                                      show_ROI=show)
+        brain.curr_state.var4 = 0.3 * brain.curr_state.var4 + 0.7 * e3
         output_speed, output_angle = brain.controller_sp.get_control_speed(
-                0.0, e3, 1.5*e3)
+                0.0, brain.curr_state.var4, 1.5*brain.curr_state.var4)
     else:
         print("\nABOUT ABOUT ABOUT ABOUT ABOUT ABOUT ABOUT ABOUT ABOUT\n")
         e3, _ = brain.detect.detect_roundabout_about(brain.car.frame,
                                                      show_ROI=show)
         # output_speed, output_angle = brain.controller_sp.get_control_speed(
         #         0.0, e3 + 0.16, 2*e3 + 0.14)
+        brain.curr_state.var4 = 0.3 * brain.curr_state.var4 + 0.7 * e3
         output_speed, output_angle = brain.controller_sp.get_control_speed(
-                0.0, e3, 2*e3)
+                0.0, brain.curr_state.var4, 2*brain.curr_state.var4)
     print(idx_point_ahead)
     print(max_idx)
     print(f'output_speed: {output_speed:.2f}, output_angle: \

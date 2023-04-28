@@ -28,12 +28,25 @@ END_NODE = 85
 # CHECKPOINTS = [86, 99, 116] #left right left right
 # complete track#[86, 430, 193, 141, 346, 85] #complete track
 CHECKPOINTS = [86, 430, 193, 141, 346, 85]  # complete track
+
+# CHECKPOINTS = [134, 145, 193, 141, 346, 85]  # roadblock
+# CHECKPOINTS = [300, 273, 141, 346, 85]  # full round
+# CHECKPOINTS = [300, 344, 141, 346, 85]  # first exit
+# CHECKPOINTS = [300, 232, 141, 346, 85]  # second exit
+# CHECKPOINTS = [113, 101, 141, 346, 85]  # left
+CHECKPOINTS = [100, 112, 141, 346, 85]  # right
+
+# CHECKPOINTS = [113, 111, 141, 346, 85]  # straight
+# CHECKPOINTS = [86, 347, 141, 346, 85]  # no bumpy
 # CHECKPOINTS = [86, 345, 193, 141, 346, 85]  # complete track
 # CHECKPOINTS = [86, 234, 193, 141, 346, 85]  # complete track
 # CHECKPOINTS = [86, 341, 193, 141, 346, 85]  # no bumpy
 # CHECKPOINTS = [86, 85]  # to the end
 # CHECKPOINTS = [86, 255, 110, 346, END_NODE]
 # CHECKPOINTS = [86, 235, END_NODE]
+
+
+
 SPEED_CHALLENGE = False
 
 ALWAYS_USE_VISION_FOR_STOPLINES = True
@@ -312,7 +325,7 @@ RB_NODES_LEFT_LANE = ['16', '138', '137', '136', '135', '134', '7']
 RB_NODES_RIGHT_LANE = ['15', '143', '142', '141', '140', '139', '8']
 AVOID_ROADBLOCK_ANGLE = 27.0  # [deg]
 AVOID_ROADBLOCK_SPEED = 0.2  # [m/s]
-AVOID_ROADBLOCK_DISTANCE = 0.6  # [m]
+AVOID_ROADBLOCK_DISTANCE = 0.7  # [m]
 
 # CHECKS
 # [m] max distance from the lane to trip the state checker
@@ -473,8 +486,11 @@ class Brain:
             sleep(0.1)
 
         # <++>
+        # <++>
+        # <++>
+        # <++>
         start_time = time()
-        while True:
+        while SIMULATOR_FLAG:
             # get closest node
             curr_time = time()
             curr_pos = np.array([self.car.x_est, self.car.y_est])
@@ -856,7 +872,7 @@ be imprecise')
 
     def tracking_local_path(self):
         # var1=initial distance from stopline, #var2=path to follow
-        # var3=local path, #var4=intersection direction
+        # var3=local path, #var4=intersection direction / ra pred avg
         print('State: tracking_local_path')
         self.activate_routines([nac.DRIVE_DESIRED_SPEED])
         if self.curr_state.just_switched:
@@ -944,6 +960,8 @@ better aligned, alpha = {alpha}'
 
             if self.next_event.name.startswith('intersection'):
                 hf.determine_intersection_direction(self, local_path_cf)
+            else:
+                self.curr_state.var4 = 0
 
             hf.show_local_path_just_switched(self, alpha, stopline_yaw,
                                              car_position_slf, local_path_cf,
@@ -968,7 +986,8 @@ better aligned, alpha = {alpha}'
         hf.show_local_path(self, car_pos_loc, SHOW_IMGS)
 
         # the local path is straight
-        if np.abs(hf.get_curvature(local_path_cf)) < 0.1:
+        if (np.abs(hf.get_curvature(local_path_cf)) < 0.1 and
+           not self.next_event.name.startswith("roundabout")):
             print('straight')
             max_idx = len(local_path_cf)-60  # dont follow until the end
         else:  # curvy path
@@ -1174,7 +1193,7 @@ better aligned, alpha = {alpha}'
             self.car.drive_distance(0.0)
             self.curr_state.var2 = time()
             self.curr_state.var3 = (AR_WATING_FOR_GPS, True)
-            self.curr_state.var4 = False  # IN RIGHT LANE
+            self.curr_state.var4 = True  # IN RIGHT LANE
             self.curr_state.just_switched = False
 
         substate, just_switched_substate = self.curr_state.var3
@@ -1191,9 +1210,9 @@ better aligned, alpha = {alpha}'
                 print(f'GPS converged, node: {closest_node}, distance: \
 {distance:.2f}')
                 if closest_node in RB_NODES_LEFT_LANE:
-                    self.curr_state.var4 = True
-                elif closest_node in RB_NODES_RIGHT_LANE:
                     self.curr_state.var4 = False
+                elif closest_node in RB_NODES_RIGHT_LANE:
+                    self.curr_state.var4 = True
                 else:
                     self.error('ERROR: ROADBLOCK: GPS converged but we are \
 not in a possible node for switching lane')
@@ -1204,6 +1223,10 @@ is too large, we are too far from the lane')
                 start_time = self.curr_state.var2
                 print(f'Waiting for gps: \
 {(curr_time-start_time):.1f}/{GPS_TIMEOUT}')
+                # <++>
+                if ALWAYS_DISTRUST_GPS:
+                    self.curr_state.var3 = (AR_SWITCHING_LANE, True)
+                    self.curr_state.var4 = True
                 if curr_time - start_time > GPS_TIMEOUT:
                     # TODO manage this case
                     self.error('WARNING: AVOIDING ROADBLOCK: No gps signal')
@@ -1974,7 +1997,7 @@ error:{overshoot_distance:.2f}')
             if curr_dist - last_obstacle_dist > MIN_DIST_BETWEEN_OBSTACLES:
                 dist = self.car.filtered_sonar_distance
 
-                if dist < OBSTACLE_DISTANCE_THRESHOLD - 0.05:
+                if dist < OBSTACLE_DISTANCE_THRESHOLD:
                     self.car.drive_speed(speed=self.desired_speed/10)
                     #print('detecting obstacle ...')
                     #print(f'sonar distance: {self.car.filtered_sonar_distance}')
