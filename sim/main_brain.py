@@ -76,7 +76,7 @@ if __name__ == '__main__':
 
     # init the car data
     if SIMULATOR_FLAG:
-        # os.system('rosservice call /gazebo/reset_simulation')
+        os.system('rosservice call /gazebo/reset_simulation')
         os.system('rosservice call gazebo/unpause_physics')
         car = AutomobileDataSimulator(trig_cam=True,
                                       trig_gps=True,

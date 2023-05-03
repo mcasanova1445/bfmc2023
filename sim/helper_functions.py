@@ -3,6 +3,7 @@
 # HELPER FUNCTIONS
 import numpy as np
 import cv2 as cv
+import pickle
 
 
 def diff_angle(angle1, angle2):
@@ -492,7 +493,7 @@ def navigate_intersection(brain, show):
     if brain.curr_state.var4 == "right":
         e3, _ = brain.detect.detect_intersection_right(brain.car.frame,
                                                        show_ROI=show)
-        e3 = 1.1 * e3
+        e3 = 1.05 * e3
     elif brain.curr_state.var4 == "left":
         e3, _ = brain.detect.detect_intersection_left(brain.car.frame,
                                                       show_ROI=show)
@@ -500,6 +501,8 @@ def navigate_intersection(brain, show):
     elif brain.curr_state.var4 == "forward":
         e3, _ = brain.detect.detect_intersection_forward(brain.car.frame,
                                                          show_ROI=show)
+        # e3, _ = brain.detect.detect_lane_ahead(brain.car.frame,
+        #                                        show_ROI=show)
     else:
         e3, _ = brain.detect.detect_lane_ahead(brain.car.frame,
                                                show_ROI=show)
@@ -602,3 +605,40 @@ def navigate_roundabout(brain, idx_point_ahead, max_idx, show):
     print(f'output_speed: {output_speed:.2f}, output_angle: \
 {np.rad2deg(output_angle):.2f}')
     brain.car.drive(speed=output_speed, angle=np.rad2deg(output_angle))
+
+
+def switch_lane_check(closest_node, meas):
+    with open('gps_angles.pkl', 'rb') as fp:
+        node_dict = pickle.load(fp)
+    with open('highway_dict.pkl', 'rb') as fp:
+        highway_dict = pickle.load(fp)
+
+    cn_angle = node_dict[closest_node][0]  # closest node angle
+    final_node = '0'  # correct node after checks
+
+    left_extremal = cn_angle - 90
+    right_extremal = cn_angle + 90
+    left_interval = []
+    right_interval = []
+
+    if left_extremal < - 180:
+        residual = (left_extremal % 180) - 180
+        left_interval = [-180, right_extremal]
+        right_interval = [180 + residual, 180]
+    elif right_extremal > 180:
+        residual = right_extremal % 180
+        left_interval = [left_extremal, 180]
+        right_interval = [-180, -180 + residual]
+    else:
+        left_interval = [left_extremal, right_extremal]
+
+    if (meas > left_interval[0] and meas < left_interval[1]) or \
+       (meas > right_interval[0] and meas < right_interval[1]):
+        final_node = closest_node
+    else:
+        final_node = node_dict[closest_node][1]
+
+    if final_node in highway_dict.keys():
+        final_node = highway_dict[final_node]
+
+    return final_node

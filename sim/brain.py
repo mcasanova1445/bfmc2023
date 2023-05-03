@@ -27,7 +27,10 @@ END_NODE = 85
 # CHECKPOINTS = [299, 275] #roundabout
 # CHECKPOINTS = [86, 99, 116] #left right left right
 # complete track#[86, 430, 193, 141, 346, 85] #complete track
-CHECKPOINTS = [86, 430, 193, 141, 346, 85]  # complete track
+CHECKPOINTS = [86, 430, 193, 141, 349, 85]  # complete track
+
+# CHECKPOINTS = [300, 346, 85]  # complete track
+CHECKPOINTS = [110, 141, 349, 85]  # complete track
 
 # CHECKPOINTS = [134, 145, 193, 141, 346, 85]  # roadblock
 # CHECKPOINTS = [300, 273, 141, 346, 85]  # full round
@@ -158,7 +161,7 @@ CONDITIONS = {
         # in expecting a sign or traffic light
         # can be set as false if there is a lot of
         # package loss or the car has not received signal in a while
-        nac.TRUST_GPS:    False,
+        nac.TRUST_GPS:    True,
         # if true, the car is on the path, if the gps is trusted
         # and the position is too far from the path it will be set to false
         nac.CAR_ON_PATH:  True,
@@ -283,7 +286,7 @@ STEER_ACTUATION_DELAY = 0.3  # [s] delay to perform the steering manouver
 # OBSTACLES
 OBSTACLE_IS_ALWAYS_PEDESTRIAN = False
 OBSTACLE_IS_ALWAYS_CAR = False
-OBSTACLE_IS_ALWAYS_ROADBLOCK = False
+OBSTACLE_IS_ALWAYS_ROADBLOCK = True
 
 # obstacle classification
 # dont detect obstacle for this distance after detecting one of them
@@ -467,7 +470,6 @@ class Brain:
         self.last_run_call = time()
 
         self.start_node_validated = False
-        self.start_node_validation_time = time()
 
         print('Brain initialized')
         print('Waiting for start semaphore...')
@@ -517,7 +519,8 @@ Starting from the first checkpoint')
                 self.path_planner.ra_enter) ^ \
            bool(self.detect.detect_stopline(
                 self.car.frame, show_ROI=SHOW_IMGS)[0] < 0.05):
-            # self.checkpoints[self.checkpoint_idx] = hf.switch_lane(self)
+            # self.checkpoints[self.checkpoint_idx] = hf.switch_lane_check(
+            #                                            closest_node, angle)
             print("<++>")
 
         self.switch_to_state(nac.START_STATE)
@@ -564,6 +567,9 @@ Starting from the first checkpoint')
         self.conditions[nac.REROUTING] = False
         # reset the signs seen
         self.sign_seen = np.zeros_like(self.sign_seen)
+
+        self.car_dist_on_path = 0
+
         if end_node == END_NODE and SPEED_CHALLENGE:
             self.switch_to_state(nac.BRAINLESS)
         else:
@@ -614,9 +620,13 @@ Starting from the first checkpoint')
         else:
             if not self.start_node_validated:
                 if self.curr_state.just_switched:
-                    self.start_node_validation_time = time()
+                    # initial position
+                    self.curr_state.var1 = [self.car.x_est, self.car.y_est]
                     self.curr_state.just_switched = False
-                # if time() - self.start_node_validation_time > 1:
+                ladistancedeldiocane = np.\
+                    sqrt((self.curr_state.var1[0] - self.car.x_est)**2 +
+                         (self.curr_state.var1[1] - self.car.y_est)**2)
+                print("LA DISTANCE DEL DIO CANE: ", ladistancedeldiocane)
                 closest_node, _ = self.path_planner.get_closest_node(
                         np.array([self.car.x, self.car.y]))
                 print('CLOSEST NODE: ', closest_node)
@@ -625,9 +635,12 @@ Starting from the first checkpoint')
                 elif closest_node in self.path_planner.route_graph.nodes:
                     self.start_node_validated = True
                 else:
-                    # hf.switch_lane(self)
+                    langledeldiocane = np.round(np.rad2deg(
+                        np.arctan2(self.car.y_est - self.curr_state.var1[1],
+                                   self.car.x_est - self.curr_state.var1[0])))
+                    self.checkpoints[self.checkpoint_idx] = hf.\
+                        switch_lane_check(closest_node, langledeldiocane)
                     print("<++>")
-                    self.start_node_validation_time = time()
 
             if self.conditions[nac.TRUST_GPS]:
                 dist_to_stopline = self.next_event.dist - self.car_dist_on_path
@@ -688,7 +701,7 @@ straight for exiting')
             if diff < 2.8:
                 print(f'Driving toward highway exit: dist so far \
 {diff:.2f} [m]')
-            elif diff < 3.5:
+            elif diff < 3.6:
                 print(f'Driving toward highway exit: dist so far \
 {diff:.2f} [m]')
 
@@ -730,7 +743,8 @@ straight for exiting')
         else:
             diff = self.car.encoder_distance - self.curr_state.var1
             dist_to_end = self.next_event.dist - diff
-            dist_to_end = len(self.path_planner.path)*0.01 - diff
+            # dist_to_end = len(self.path_planner.path)*0.01 - diff
+            print('DIST TO END: ', dist_to_end)
             if dist_to_end > END_STATE_DISTANCE_THRESHOLD:
                 print(f'Driving toward end: exiting in \
 {dist_to_end:.2f} [m]')
@@ -1235,6 +1249,10 @@ is too large, we are too far from the lane')
             in_right_lane = self.curr_state.var4
             avoid_angle = AVOID_ROADBLOCK_ANGLE if in_right_lane \
                 else -AVOID_ROADBLOCK_DISTANCE
+            curr_check_new = 135 if in_right_lane \
+                else 140
+            next_check_new = 145 if in_right_lane \
+                else 147
             if just_switched_substate:
                 print('Switching to left lane')
                 self.car.drive_angle(-avoid_angle)
@@ -1242,6 +1260,32 @@ is too large, we are too far from the lane')
                 self.car.drive_speed(AVOID_ROADBLOCK_SPEED)
                 self.curr_state.var1 = \
                     start_encoder_pos = self.car.encoder_distance
+
+                self.checkpoints[self.checkpoint_idx] = curr_check_new
+                self.checkpoints.insert(self.checkpoint_idx+1, next_check_new)
+
+                start_node = self.checkpoints[self.checkpoint_idx]
+                # already checked in end_state
+                end_node = self.checkpoints[self.checkpoint_idx+1]
+                print(f'Start node: {start_node}, End node: {end_node}')
+                # calculate path
+                self.path_planner.compute_shortest_path(start_node, end_node)
+                # initialize the list of events on the path
+                print('Augmenting path...')
+                events = self.path_planner.augment_path(draw=SHOW_IMGS)
+                print('Path augmented')
+                # add the events to the list of events, increasing it
+                self.events = self.create_sequence_of_events(events)
+                self.event_idx = 1
+                self.next_event = self.events[0]
+                self.prev_event.dist = 0.0
+                self.car.reset_rel_pose()
+                print(f'EVENTS: {self.next_event}, idx: {self.event_idx}')
+                for e in self.events:
+                    print(e)
+                # draw the path
+                self.path_planner.draw_path()
+                print('Starting...')
                 self.curr_state.var3 = (AR_SWITCHING_LANE, False)
             else:
                 start_encoder_pos = self.curr_state.var1
@@ -1328,7 +1372,7 @@ expected parking spot position!')
             if just_changed:
                 # this will become true if we trusted the gps
                 # at least once. We will use local pos afterward
-                trusted_gps_once = False
+                trusted_gps_once = True
                 self.curr_state.var2 = trusted_gps_once  # var2
                 self.curr_state.var1 = (park_state, park_type, False)
                 self.car.reset_rel_pose()
@@ -1345,6 +1389,7 @@ expected parking spot position!')
                     self.curr_state.var1 = (nac.LOCALIZING_PARKING_SPOT,
                                             park_type, True)
                     self.parking_method = 'sign'
+                    raise KeyboardInterrupt
                 print(f'Parking: GPS not trusted, \
 waiting for GPS to be trusted for {passed_time}/{PARK_MAX_SECONDS_W8_GPS} \
 [s]...')
@@ -2022,7 +2067,7 @@ error:{overshoot_distance:.2f}')
         else:
             prev_dist = self.car.encoder_distance
         curr_dist = self.car.encoder_distance
-        print(f'{self.routines[nac.UPDATE_STATE].var1}')
+        print(f'VAR1: {self.routines[nac.UPDATE_STATE].var1}')
         print(f'DISTANCE CHANGE: {prev_dist-curr_dist}')
         if np.abs(prev_dist-curr_dist) > DISTANCES_BETWEEN_FRAMES:
             self.past_frames.append(self.car.frame)
@@ -2082,10 +2127,23 @@ error:{overshoot_distance:.2f}')
                     self.car_dist_on_path += dist_delay_increment
         else:
             # aposifjanwlkerhqwe;lrhoqweifeihqkugik
+            self.car_dist_on_path += curr_dist - prev_dist
+            print('PATH: ', self.path_planner.path)
+            print('DIST ON PATH: ', self.car_dist_on_path)
             was_bumpy = self.conditions[nac.BUMPY_ROAD]
             self.conditions[nac.BUMPY_ROAD] = str(self.checkpoints[
                 self.checkpoint_idx]) \
-                in self.path_planner.bumpy_road_nodes
+                in self.path_planner.bumpy_road_nodes and \
+                (self.next_event.name == nac.JUNCTION_EVENT or
+                 self.car_dist_on_path < 13.2)
+            self.conditions[nac.CAN_OVERTAKE] = not \
+                self.conditions[nac.BUMPY_ROAD]
+
+            self.conditions[nac.HIGHWAY] = str(self.checkpoints[
+                self.checkpoint_idx]) \
+                in self.path_planner.highway_nodes and \
+                self.car_dist_on_path < 9.5
+
             if self.conditions[nac.BUMPY_ROAD] and not was_bumpy:
                 self.env.publish_obstacle(nac.BUMPY_ROAD,
                                           self.car.x_est,

@@ -388,9 +388,9 @@ class Detection:
 
         images = frame
 
-        frame_flip = cv.flip(frame, 1)
+        # frame_flip = cv.flip(frame, 1)
         # stack the 2 images
-        images = np.stack((frame, frame_flip), axis=0)
+        # images = np.stack((frame, frame_flip), axis=0)
         blob = cv.dnn.blobFromImages(images, 1.0, IMG_SIZE, 0,
                                      swapRB=True, crop=False)
         self.intersection_navigator_forward.setInput(blob)
