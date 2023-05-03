@@ -30,7 +30,8 @@ END_NODE = 85
 CHECKPOINTS = [86, 430, 193, 141, 349, 85]  # complete track
 
 # CHECKPOINTS = [300, 346, 85]  # complete track
-CHECKPOINTS = [110, 141, 349, 85]  # complete track
+CHECKPOINTS = [430, 232, 141, 349, 85]  # complete track
+# CHECKPOINTS = [430, 260, 141, 349, 85]  # complete track
 
 # CHECKPOINTS = [134, 145, 193, 141, 346, 85]  # roadblock
 # CHECKPOINTS = [300, 273, 141, 346, 85]  # full round
@@ -972,7 +973,8 @@ better aligned, alpha = {alpha}'
             self.car.reset_rel_pose()
             self.curr_state.just_switched = False
 
-            if self.next_event.name.startswith('intersection'):
+            if self.next_event.name.startswith('intersection') or \
+               self.next_event.name.startswith('junction'):
                 hf.determine_intersection_direction(self, local_path_cf)
             else:
                 self.curr_state.var4 = 0
@@ -1009,13 +1011,16 @@ better aligned, alpha = {alpha}'
             print('curvy')
 
         # State exit conditions
-        if self.next_event.name.startswith("junction"):
-            max_idx = max_idx * 0.7
+        if self.next_event.name.startswith("junction") and \
+           self.curr_state.var4 == "left":
+            max_idx = max_idx * 0.60
         if idx_point_ahead >= max_idx:  # we reached the end of the path
             self.switch_to_state(nac.LANE_FOLLOWING)
             self.go_to_next_event()
         elif self.next_event.name.startswith("intersection"):
             hf.navigate_intersection(self, SHOW_IMGS)
+        elif self.next_event.name.startswith("junction"):
+            hf.navigate_junction(self, idx_point_ahead, SHOW_IMGS)
         elif self.next_event.name.startswith("roundabout"):
             hf.navigate_roundabout(self, idx_point_ahead, max_idx, SHOW_IMGS)
         else:  # we are still on the path
