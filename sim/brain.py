@@ -286,7 +286,7 @@ STEER_ACTUATION_DELAY = 0.3  # [s] delay to perform the steering manouver
 # OBSTACLES
 OBSTACLE_IS_ALWAYS_PEDESTRIAN = False
 OBSTACLE_IS_ALWAYS_CAR = False
-OBSTACLE_IS_ALWAYS_ROADBLOCK = True
+OBSTACLE_IS_ALWAYS_ROADBLOCK = False
 
 # obstacle classification
 # dont detect obstacle for this distance after detecting one of them
