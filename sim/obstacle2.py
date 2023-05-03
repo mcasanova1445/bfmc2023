@@ -16,7 +16,7 @@ class Obstacle:
 
         result[0] = cv.matchTemplate(img, self.tem[0], self.match_method)
         _, self.maxVal[0], _, self.maxLoc = cv.minMaxLoc(result[0], None)
-        # print('Score of template n.0 = ' + str(self.maxVal[0]))
+        print('Score of template n.0 = ' + str(self.maxVal[0]))
         if (self.maxVal[0] >= 0.60):
             self.maxVal[0] += 1
         elif (self.maxVal[0] < 0.55):
@@ -38,8 +38,8 @@ class Obstacle:
             else:
                 rb_score += self.maxVal[i]
 
-            # print('Total car score: ' + str(car_score))
-            # print('Total roadblock score: ' + str(rb_score))
+            print('Total car score: ' + str(car_score))
+            print('Total roadblock score: ' + str(rb_score))
 
         if car_score > 4 or rb_score > 4:
             if (car_score >= rb_score):

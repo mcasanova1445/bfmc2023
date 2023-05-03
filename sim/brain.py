@@ -48,6 +48,8 @@ CHECKPOINTS = [430, 232, 141, 349, 85]  # complete track
 # CHECKPOINTS = [86, 85]  # to the end
 # CHECKPOINTS = [86, 255, 110, 346, END_NODE]
 # CHECKPOINTS = [86, 235, END_NODE]
+CHECKPOINTS = [86, 110, 134, 146]  # rb on R lane from start
+# CHECKPOINTS = [113, 134, 145, 345]  # rb on L lane, right turn to single way and HW
 
 SPEED_CHALLENGE = False
 
