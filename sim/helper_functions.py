@@ -631,6 +631,7 @@ def switch_lane_check(closest_node, meas):
         right_interval = [-180, -180 + residual]
     else:
         left_interval = [left_extremal, right_extremal]
+        right_interval = [-666, 666]
 
     if (meas > left_interval[0] and meas < left_interval[1]) or \
        (meas > right_interval[0] and meas < right_interval[1]):
