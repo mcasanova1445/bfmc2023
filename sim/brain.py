@@ -20,6 +20,7 @@ from environmental_data_simulator import EnvironmentalData
 from obstacle2 import Obstacle
 import helper_functions as hf
 
+# from maneuvers_old import Maneuvers
 
 SHOW_IMGS = False
 
@@ -56,13 +57,14 @@ CHECKPOINTS = [430, 232, 141, 349, 85]  # complete track
 # CHECKPOINTS = [430, 229, 236]  # rb on L lane, right turn to single way and HW
 # CHECKPOINTS = [265, 190]  # rb on L lane, right turn to single way and HW
 
-# CHECKPOINTS = [265, 129] # parking + ramp
+CHECKPOINTS = [265, 129] # parking + ramp
+CHECKPOINTS = [180, 129] # parking + ramp
 # CHECKPOINTS = [86, 110, 134, 146]  # rb on R lane from start
 # CHECKPOINTS = [113, 134, 145]  # rb on L lane, right turn to single way and HW
 # CHECKPOINTS = [86, 87, 90, 49, 309, 311, 314, 426, 467, 468, 229, 232, 197, 144, 146, 121] # Speed Challenge
-# CHECKPOINTS = [86, 90, 311, 427, 467, 229, 232, 197, 144, 146, 121] # Speed Challenge reduced
+CHECKPOINTS = [86, 430, 229, 265, 146, 121] # Speed Challenge reduced
 
-CHECKPOINTS = [430, 275]
+# CHECKPOINTS = [430, 275]
 # CHECKPOINTS = [430, 240]
 
 SPEED_CHALLENGE = False
@@ -91,6 +93,7 @@ tem.append(cv.imread("templates/rb4.png"))
 tem.append(cv.imread("templates/rb5.png"))
 obs = Obstacle(tem, num_tem)
 
+# park = Maneuvers()
 
 class State():
     def __init__(self, name=None, method=None, activated=False):
@@ -1383,6 +1386,12 @@ expected parking spot position!')
                             nac.S_STEP5,
                             nac.S_STEP6,
                             nac.S_STEP7]:
+            # self.car.drive(speed=0.2, angle=0)
+            # sleep(1)
+            # self.car.drive(speed=0.0, angle=0)
+            # park.parallel_parking(self.car)
+
+            # self.curr_state.var1 = (nac.PARK_END, park_type, True)
             self.parking_s(just_changed, park_state, park_type)
 
         # end of manouver, go to next event

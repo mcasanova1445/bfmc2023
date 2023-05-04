@@ -533,10 +533,10 @@ def navigate_junction(brain, idx_point_ahead, show):
                             angle=5)
 
     else:
-        if idx_point_ahead < 20:
+        if idx_point_ahead < 8:
             brain.car.drive(speed=0.2,
                             angle=10)
-        elif idx_point_ahead < 50:
+        elif idx_point_ahead < 40:
             brain.car.drive(speed=0.2,
                             angle=20)
         elif idx_point_ahead < 120:
