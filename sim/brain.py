@@ -55,6 +55,12 @@ CHECKPOINTS = [465, 173]  # rb on L lane, right turn to single way and HW
 CHECKPOINTS = [430, 229, 236]  # rb on L lane, right turn to single way and HW
 CHECKPOINTS = [265, 190]  # rb on L lane, right turn to single way and HW
 
+CHECKPOINTS = [265, 129] # parking + ramp
+CHECKPOINTS = [86, 110, 134, 146]  # rb on R lane from start
+CHECKPOINTS = [113, 134, 145]  # rb on L lane, right turn to single way and HW
+CHECKPOINTS = [86, 87, 90, 49, 309, 311, 314, 426, 467, 468, 229, 232, 197, 144, 146, 121] # Speed Challenge
+CHECKPOINTS = [86, 90, 311, 427, 467, 229, 232, 197, 144, 146, 121] # Speed Challenge reduced
+
 SPEED_CHALLENGE = False
 
 ALWAYS_USE_VISION_FOR_STOPLINES = True
