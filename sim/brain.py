@@ -205,7 +205,7 @@ ACHIEVEMENTS = {
 SIGN_DIST_THRESHOLD = 0.5
 # sempahores
 SEMAPHORE_IS_ALWAYS_GREEN = False if not SIMULATOR_FLAG else True
-# SEMAPHORE_IS_ALWAYS_GREEN = True
+SEMAPHORE_IS_ALWAYS_GREEN = True
 
 DEQUE_OF_PAST_FRAMES_LENGTH = 50
 DISTANCES_BETWEEN_FRAMES = 0.03
@@ -915,7 +915,8 @@ be imprecise')
         # var1=initial distance from stopline, #var2=path to follow
         # var3=local path, #var4=intersection direction / ra pred avg
         print('State: tracking_local_path')
-        self.activate_routines([nac.DRIVE_DESIRED_SPEED])
+        # self.activate_routines([nac.DRIVE_DESIRED_SPEED])
+        self.activate_routines([])
         if self.curr_state.just_switched:
             stopline_position = self.next_event.point
             stopline_yaw = self.next_event.yaw_stopline
