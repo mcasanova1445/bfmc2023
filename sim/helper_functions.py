@@ -518,7 +518,7 @@ def navigate_junction(brain, idx_point_ahead, show):
         e3, _ = brain.detect.detect_intersection_right(brain.car.frame,
                                                        show_ROI=show)
         e3 = 1.6 * e3
-    elif brain.curr_state.var4 == "left":
+    else:
         if idx_point_ahead < 35:
             e3, _ = brain.detect.detect_intersection_right(brain.car.frame,
                                                            show_ROI=show)
@@ -542,9 +542,6 @@ def navigate_junction(brain, idx_point_ahead, show):
         # else:
         #     e3, _ = brain.detect.detect_intersection_left(brain.car.frame,
         #                                                   show_ROI=show)
-    else:
-        print("ACCIPIGNA")
-        raise KeyboardInterrupt
     output_speed, output_angle = brain.controller_sp.get_control_speed(
             0.0, 0.0, e3)
     print(f'output_speed: {output_speed:.2f}, output_angle: \

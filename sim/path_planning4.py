@@ -7,7 +7,7 @@ from pyclothoids import Clothoid
 import names_and_constants as nac
 import helper_functions as hf
 
-SHOW_IMGS = True
+SHOW_IMGS = False
 
 
 class PathPlanning():

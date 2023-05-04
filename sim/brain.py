@@ -49,7 +49,11 @@ CHECKPOINTS = [430, 232, 141, 349, 85]  # complete track
 # CHECKPOINTS = [86, 255, 110, 346, END_NODE]
 # CHECKPOINTS = [86, 235, END_NODE]
 CHECKPOINTS = [86, 110, 134, 146]  # rb on R lane from start
-# CHECKPOINTS = [113, 134, 145, 345]  # rb on L lane, right turn to single way and HW
+CHECKPOINTS = [110, 134, 146]  # rb on R lane from start
+CHECKPOINTS = [113, 134, 145, 345]  # rb on L lane, right turn to single way and HW
+CHECKPOINTS = [465, 173]  # rb on L lane, right turn to single way and HW
+CHECKPOINTS = [430, 229, 236]  # rb on L lane, right turn to single way and HW
+CHECKPOINTS = [265, 190]  # rb on L lane, right turn to single way and HW
 
 SPEED_CHALLENGE = False
 
@@ -186,6 +190,7 @@ ACHIEVEMENTS = {
 SIGN_DIST_THRESHOLD = 0.5
 # sempahores
 SEMAPHORE_IS_ALWAYS_GREEN = False if not SIMULATOR_FLAG else True
+# SEMAPHORE_IS_ALWAYS_GREEN = True
 
 DEQUE_OF_PAST_FRAMES_LENGTH = 50
 DISTANCES_BETWEEN_FRAMES = 0.03
@@ -1415,6 +1420,10 @@ waiting for GPS to be trusted for {passed_time}/{PARK_MAX_SECONDS_W8_GPS} \
                 car_idx_on_path = np.argmin(norm(path_to_analyze -
                                                  car_est_pos, axis=1))
                 park_index_on_path = SUBPATH_LENGTH_FOR_PARKING
+                print(car_idx_on_path)
+                print(park_index_on_path)
+                print(self.car.dist_loc)
+                print(MAX_PARK_SEARCH_DIST)
                 if car_idx_on_path < park_index_on_path and \
                         self.car.dist_loc < MAX_PARK_SEARCH_DIST:
                     print('Behind parking spot')

@@ -31,8 +31,8 @@ TARGET_FPS = 30.0
 sample_time = 0.01  # [s]
 DESIRED_SPEED = 0.35  # [m/s]
 # DESIRED_SPEED = 0.8  # [m/s]
-SP_SPEED = 0.35  # [m/s]
-CURVE_SPEED = 0.6  # [m/s]
+SP_SPEED = 0.2  # [m/s]
+CURVE_SPEED = 0.3*0.6  # [m/s]
 path_step_length = 0.01  # [m]
 # CONTROLLER
 k1 = 0.0  # 0.0 gain error parallel to direction (speed)

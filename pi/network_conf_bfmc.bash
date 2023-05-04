@@ -17,10 +17,10 @@
 
 ## S_H_net connection
 # Master IP address
-export ROS_MASTER_URI=http://192.168.1.106:11311
+export ROS_MASTER_URI=http://192.168.1.74:11311
 # Local computer IP Address
-export ROS_HOSTNAME=192.168.1.106
-export ROS_IP=192.168.1.106
+export ROS_HOSTNAME=192.168.1.74
+export ROS_IP=192.168.1.74
 echo "ROS_IP:           $ROS_IP"
 echo "ROS_MASTER_URI:   $ROS_MASTER_URI"
 echo "ROS_HOSTNAME:     $ROS_HOSTNAME"
