@@ -4,6 +4,7 @@
 import numpy as np
 import cv2 as cv
 import pickle
+import time
 
 
 def diff_angle(angle1, angle2):
@@ -515,18 +516,45 @@ def navigate_intersection(brain, show):
 
 def navigate_junction(brain, idx_point_ahead, show):
     if brain.curr_state.var4 == "right":
-        e3, _ = brain.detect.detect_intersection_right(brain.car.frame,
-                                                       show_ROI=show)
-        e3 = 1.6 * e3
-    else:
-        if idx_point_ahead < 35:
-            e3, _ = brain.detect.detect_intersection_right(brain.car.frame,
-                                                           show_ROI=show)
-            e3 = 1.6 * e3
+        # e3, _ = brain.detect.detect_intersection_right(brain.car.frame,
+        #                                                show_ROI=show)
+        # e3 = 1.6 * e3
+        if idx_point_ahead < 20:
+            brain.car.drive(speed=0.2,
+                            angle=10)
+        elif idx_point_ahead < 50:
+            brain.car.drive(speed=0.2,
+                            angle=20)
+        elif idx_point_ahead < 120:
+            brain.car.drive(speed=0.2,
+                            angle=28)
         else:
-            e3, _ = brain.detect.detect_intersection_left(brain.car.frame,
-                                                          show_ROI=show)
-            e3 = 1.6 * e3
+            brain.car.drive(speed=0.2,
+                            angle=5)
+
+    else:
+        if idx_point_ahead < 20:
+            brain.car.drive(speed=0.2,
+                            angle=10)
+        elif idx_point_ahead < 50:
+            brain.car.drive(speed=0.2,
+                            angle=20)
+        elif idx_point_ahead < 120:
+            brain.car.drive(speed=0.2,
+                            angle=-25)
+        else:
+            brain.car.drive(speed=0.2,
+                            angle=-5)
+
+        # if idx_point_ahead < 35:
+        #     e3, _ = brain.detect.detect_intersection_right(brain.car.frame,
+        #                                                    show_ROI=show)
+        #     e3 = 1.6 * e3
+        # else:
+        #     e3, _ = brain.detect.detect_intersection_left(brain.car.frame,
+        #                                                   show_ROI=show)
+        #     e3 = 1.6 * e3
+
         # if idx_point_ahead < 140:
         #     e3, _ = brain.detect.detect_intersection_right(brain.car.frame,
         #                                                    show_ROI=show)
@@ -542,11 +570,10 @@ def navigate_junction(brain, idx_point_ahead, show):
         # else:
         #     e3, _ = brain.detect.detect_intersection_left(brain.car.frame,
         #                                                   show_ROI=show)
-    output_speed, output_angle = brain.controller_sp.get_control_speed(
-            0.0, 0.0, e3)
-    print(f'output_speed: {output_speed:.2f}, output_angle: \
-{np.rad2deg(output_angle):.2f}')
-    brain.car.drive(speed=output_speed, angle=np.rad2deg(output_angle))
+    # output_speed, output_angle = brain.controller_sp.get_control_speed(
+    #         0.0, 0.0, e3)
+    # print(f'output_speed: {output_speed:.2f}, output_angle: {np.rad2deg(output_angle):.2f}')
+    # brain.car.drive(speed=output_speed, angle=np.rad2deg(output_angle))
 
 
 def navigate_open_loop(brain,
