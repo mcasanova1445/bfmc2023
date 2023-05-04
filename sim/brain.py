@@ -495,22 +495,20 @@ class Brain:
         # <++>
         # <++>
         start_time = time()
-        while SIMULATOR_FLAG:
+        while True:
             # get closest node
             curr_time = time()
             curr_pos = np.array([self.car.x_est, self.car.y_est])
             closest_node, distance = self.path_planner.get_closest_node(
                     curr_pos)
-            print(f'GPS converged, starting from node: {closest_node}, \
-distance: {distance:.2f}')
             # sleep(3.0)
-            self.checkpoints[self.checkpoint_idx] = closest_node
-            if distance > 0.8:
-                self.error('ERROR: REROUTING: GPS converged, but distance is \
-too large, we are too far from the lane')
-            print(f'Waiting for gps: \
-{(curr_time-start_time):.1f}/{GPS_TIMEOUT}')
             if len(self.car.x_buffer) >= 5:
+                print(f'Waiting for gps: \
+{(curr_time-start_time):.1f}/{GPS_TIMEOUT}')
+                self.checkpoints[self.checkpoint_idx] = closest_node
+                if distance > 0.8:
+                    self.error('ERROR: REROUTING: GPS converged, but distance \
+is too large, we are too far from the lane')
                 break
             if curr_time - start_time > GPS_TIMEOUT:
                 print('WARNING: ROUTE_GENERATION: No gps signal, \
@@ -518,18 +516,23 @@ Starting from the first checkpoint')
                 sleep(3.0)
                 break
             if ALWAYS_DISTRUST_GPS:
+                if len(self.car.x_buffer) < 5:
+                    node_coords = self.path_planner.get_coord(
+                        str(self.checkpoints[0]))
+                    self.car.x_est = node_coords[0]
+                    self.car.y_est = node_coords[1]
                 break
             # self.car.update_estimated_state()  # <++>
 
-        if bool(self.checkpoints[self.checkpoint_idx] in
-                self.path_planner.intersection_in or
-                self.checkpoints[self.checkpoint_idx] in
-                self.path_planner.ra_enter) ^ \
-           bool(self.detect.detect_stopline(
-                self.car.frame, show_ROI=SHOW_IMGS)[0] < 0.05):
-            # self.checkpoints[self.checkpoint_idx] = hf.switch_lane_check(
-            #                                            closest_node, angle)
-            print("<++>")
+        # if bool(self.checkpoints[self.checkpoint_idx] in
+        #         self.path_planner.intersection_in or
+        #         self.checkpoints[self.checkpoint_idx] in
+        #         self.path_planner.ra_enter) ^ \
+        #    bool(self.detect.detect_stopline(
+        #         self.car.frame, show_ROI=SHOW_IMGS)[0] < 0.05):
+        #     # self.checkpoints[self.checkpoint_idx] = hf.switch_lane_check(
+        #     #                                            closest_node, angle)
+        #     print("<++>")
 
         self.switch_to_state(nac.START_STATE)
 
@@ -1264,7 +1267,7 @@ is too large, we are too far from the lane')
             curr_check_new = 135 if in_right_lane \
                 else 140
             next_check_new = 145 if in_right_lane \
-                else 147
+                else 146
             if just_switched_substate:
                 print('Switching to left lane')
                 self.car.drive_angle(-avoid_angle)
@@ -1335,6 +1338,7 @@ is too large, we are too far from the lane')
                 self.error('ERROR: PARKING -> parking spot is not close to \
 expected parking spot position!')
             self.curr_state.var1 = (park_state, park_type, True)
+            self.curr_state.var4 = self.car.encoder_distance
             self.curr_state.just_switched = False
 
         park_state, park_type, just_changed = self.curr_state.var1
@@ -1420,10 +1424,16 @@ waiting for GPS to be trusted for {passed_time}/{PARK_MAX_SECONDS_W8_GPS} \
                 car_idx_on_path = np.argmin(norm(path_to_analyze -
                                                  car_est_pos, axis=1))
                 park_index_on_path = SUBPATH_LENGTH_FOR_PARKING
-                print(car_idx_on_path)
-                print(park_index_on_path)
-                print(self.car.dist_loc)
-                print(MAX_PARK_SEARCH_DIST)
+                if ALWAYS_DISTRUST_GPS:
+                    car_idx_on_path = int((self.car.encoder_distance -
+                                           self.curr_state.var4) * 100 +
+                                          115 + 68)
+                print("path_to_analyze ", path_to_analyze)
+                print("car_est_pos ", car_est_pos)
+                print("car_idx_on_path ", car_idx_on_path)
+                print("park_index_on_path ", park_index_on_path)
+                print("self.car.dist_loc ", self.car.dist_loc)
+                print("MAX_PARK_SEARCH_DIST ", MAX_PARK_SEARCH_DIST)
                 if car_idx_on_path < park_index_on_path and \
                         self.car.dist_loc < MAX_PARK_SEARCH_DIST:
                     print('Behind parking spot')
