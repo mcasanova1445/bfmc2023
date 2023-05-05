@@ -27,9 +27,11 @@ SHOW_IMGS = False
 
 # To start from the start node (86) use [-42, -42]
 STARTING_COORDS = [-42, -42]
-STARTING_COORDS = [5.27, 8.75]  # Upwards
-STARTING_COORDS = [7.60, 3.93]  # Pre round - Full round
-STARTING_COORDS = [11.55, 3.55]  # Pre round - Half round
+# STARTING_COORDS = [5.27, 8.75]  # Upwards
+# STARTING_COORDS = [7.60, 3.93]  # Pre round - Full round
+# STARTING_COORDS = [7.60, 15 - 3.93]  # Pre round - Full round
+# STARTING_COORDS = [11.55, 3.55]  # Pre round - Half round
+# STARTING_COORDS = [11.55, 15 - 3.55]  # Pre round - Half round
 
 END_NODE = 85
 
@@ -37,13 +39,15 @@ END_NODE = 85
 
 if not SPEED_CHALLENGE:
     CHECKPOINTS = [86, 430, 197, 112, 349, 113, 134, 146, END_NODE]
+    CHECKPOINTS = [300, 134, 146, END_NODE]
 else:
     CHECKPOINTS = [86, 430, 197, 123]
+    CHECKPOINTS = [430, 197, 123]
 
 # CHECKPOINTS = [90, 430, 197, 112, 349, 113, 134, 145, END_NODE]  # La Tecnique
 # CHECKPOINTS = [86, 430, 229, 265, 146, 121]  # Speed Challenge - hard
 
-# CHECKPOINTS = [263, 184]
+# CHECKPOINTS = [103, 79]
 # CHECKPOINTS = [90, 430, 104]
 
 ALWAYS_USE_VISION_FOR_STOPLINES = True
@@ -184,7 +188,7 @@ ACHIEVEMENTS = {
 SIGN_DIST_THRESHOLD = 0.5
 # sempahores
 SEMAPHORE_IS_ALWAYS_GREEN = False if not SIMULATOR_FLAG else True
-# SEMAPHORE_IS_ALWAYS_GREEN = True
+SEMAPHORE_IS_ALWAYS_GREEN = True
 
 DEQUE_OF_PAST_FRAMES_LENGTH = 50
 DISTANCES_BETWEEN_FRAMES = 0.03
@@ -526,6 +530,8 @@ Starting from the first checkpoint')
                     self.checkpoints[self.checkpoint_idx] = closest_node
                     self.car.x_est = curr_pos[0]
                     self.car.y_est = curr_pos[1]
+                    print(closest_node)
+                    # raise KeyboardInterrupt
                 elif len(self.car.x_buffer) < 5:
                     node_coords = self.path_planner.get_coord(
                         str(self.checkpoints[0]))
@@ -1397,7 +1403,7 @@ expected parking spot position!')
                             nac.S_STEP6,
                             nac.S_STEP7]:
             self.car.drive(speed=0.2, angle=0)
-            sleep(1)
+            sleep(0.8)
             self.car.drive_speed(speed=0.0)
             park.parallel_parking(self.car)
 
