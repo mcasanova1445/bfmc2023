@@ -33,16 +33,19 @@ STARTING_COORDS = [-42, -42]
 # STARTING_COORDS = [11.55, 3.55]  # Pre round - Half round
 # STARTING_COORDS = [11.55, 15 - 3.55]  # Pre round - Half round
 
+# STARTING_COORDS = [7.60, 15 - 3.93]  # Pre round - Full round
+
 END_NODE = 85
 
 # CHECKPOINTS = [86, 430, 193, 141, 349, 85]  # complete track - old
 
 if not SPEED_CHALLENGE:
-    CHECKPOINTS = [86, 430, 197, 112, 349, 113, 134, 146, END_NODE]
-    CHECKPOINTS = [300, 134, 146, END_NODE]
+    CHECKPOINTS = [86, 430, 197, 112, 349, 113, 134, 146, END_NODE]  # THIS
+    # CHECKPOINTS = [300, 349, 113, 134, 146, END_NODE]
+    # CHECKPOINTS = [430, 197, 112, 349, 113, 134, 146, END_NODE]
 else:
-    CHECKPOINTS = [86, 430, 197, 123]
-    CHECKPOINTS = [430, 197, 123]
+    # CHECKPOINTS = [86, 430, 197, 123]  # THIS
+    CHECKPOINTS = [146, 123]
 
 # CHECKPOINTS = [90, 430, 197, 112, 349, 113, 134, 145, END_NODE]  # La Tecnique
 # CHECKPOINTS = [86, 430, 229, 265, 146, 121]  # Speed Challenge - hard
@@ -188,7 +191,7 @@ ACHIEVEMENTS = {
 SIGN_DIST_THRESHOLD = 0.5
 # sempahores
 SEMAPHORE_IS_ALWAYS_GREEN = False if not SIMULATOR_FLAG else True
-SEMAPHORE_IS_ALWAYS_GREEN = True
+# SEMAPHORE_IS_ALWAYS_GREEN = True
 
 DEQUE_OF_PAST_FRAMES_LENGTH = 50
 DISTANCES_BETWEEN_FRAMES = 0.03
@@ -491,6 +494,8 @@ class Brain:
         sleep(3.0)
         while True:
             semaphore_start_state = self.env.get_semaphore_state(nac.START)
+            # <++>
+            break
             if SEMAPHORE_IS_ALWAYS_GREEN:
                 semaphore_start_state = nac.GREEN
             if semaphore_start_state == nac.GREEN:
@@ -2315,6 +2320,7 @@ invalid routine'
         else:
             # it was the last checkpoint
             print('Reached last checkpoint...\nExiting...')
+            self.car.drive_angle(angle=0.0)
             enc_start = self.car.encoder_distance
             if self.checkpoints[-1] == 85:
                 extra_dist = 0.5

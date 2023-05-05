@@ -132,7 +132,7 @@ class ControllerSpeed():
             output_angle = delta_pp  # + delta_i
 
             # <++> Changed from 28
-            MAX_ANGLE = 21
+            MAX_ANGLE = 23
             if output_angle > np.deg2rad(MAX_ANGLE):
                 output_angle = np.deg2rad(MAX_ANGLE)
             if output_angle < np.deg2rad(-MAX_ANGLE):

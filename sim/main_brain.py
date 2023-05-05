@@ -39,10 +39,10 @@ if not SPEED_CHALLENGE:
     BL_CURVE_SPEED = 0.5
 else:
     DESIRED_SPEED = 0.4  # [m/s]
-    SP_SPEED = 0.6  # [m/s]
-    CURVE_SPEED = 0.4  # [m/s]
+    SP_SPEED = 0.4  # [m/s]
+    CURVE_SPEED = 0.3  # [m/s]
     BL_SP_SPEED = 0.8
-    BL_CURVE_SPEED = 0.4
+    BL_CURVE_SPEED = 0.6
 
 path_step_length = 0.01  # [m]
 # CONTROLLER
