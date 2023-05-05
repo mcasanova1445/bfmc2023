@@ -225,7 +225,7 @@ POINT_AHEAD_DISTANCE_LOCAL_TRACKING = 0.3  # 0.3
 
 # speed control
 # multiplier for desired speed, used to regulate highway speed
-ACCELERATION_CONST = 1.2
+ACCELERATION_CONST = 1.4
 SLOW_DOWN_CONST = 0.3
 
 # highway exit
@@ -1916,52 +1916,26 @@ error:{overshoot_distance:.2f}')
                 OBSTACLE_DISTANCE_THRESHOLD:  # we are approaching the obstacle
             print('Capturing imgs')
         else:
-            frames = self.get_frames_in_range(
-                    start_dist=OBSTACLE_IMGS_CAPTURE_START_DISTANCE -
-                    OBSTACLE_IMGS_CAPTURE_STOP_DISTANCE)
-            print(f'Captured {len(frames)} imgs, running classification...')
-            # forcing the classification
-            frame = self.car.frame
-            img = frame.copy()
-            img = cv.cvtColor(img, cv.COLOR_BGR2GRAY)
-            img = img[40:120, 105:215]
-            cv.imwrite('test.png', img)
-            obstacle = obs.detect_obstacle(cv.imread("test.png"))
-
-            # Previous logic for obstacle classfification
-
-            # if self.conditions[nac.CAN_OVERTAKE]:
-            #     obstacle = nac.CAR
-            # elif self.conditions[nac.BUMPY_ROAD]:
-            #     obstacle = nac.CAR
-            # else:  # we cannot overtake and we are NOT in a bumpy road
-            #     obstacle = nac.PEDESTRIAN
-            # # check for roadblock
-            # closest_node, dist_closest = self.path_planner.get_closest_node(
-            #         np.array([self.car.x_est, self.car.y_est]))
-
-            # print(f'Closest node: {closest_node}, dist={dist_closest:.2f}')
-            # print(f'Car pos= {(self.car.x_est, self.car.y_est)}')
-            # print(f'coords = {self.path_planner.get_coord(closest_node)}')
-            # if closest_node in RB_NODES_LEFT_LANE or closest_node in \
-            #         RB_NODES_RIGHT_LANE:
-            #     obstacle = nac.ROADBLOCK
-
-            print(f'Obstacle: {obstacle}')
-            if OBSTACLE_IS_ALWAYS_CAR:
-                obstacle = nac.CAR
-            if OBSTACLE_IS_ALWAYS_PEDESTRIAN:
-                obstacle = nac.PEDESTRIAN
-            if OBSTACLE_IS_ALWAYS_ROADBLOCK:
-                obstacle = nac.ROADBLOCK
-
-            # TODO: add conditions to filter out false positives
-
             if self.checkpoints[self.checkpoint_idx] == 134:
                 obstacle = nac.ROADBLOCK
             elif (self.conditions[nac.BUMPY_ROAD] or
                     self.conditions[nac.HIGHWAY]):
                 obstacle = nac.CAR
+            else:
+
+                frames = self.get_frames_in_range(
+                        start_dist=OBSTACLE_IMGS_CAPTURE_START_DISTANCE -
+                        OBSTACLE_IMGS_CAPTURE_STOP_DISTANCE)
+                print(f'Captured {len(frames)} imgs, running classification...')
+                # forcing the classification
+                frame = self.car.frame
+                img = frame.copy()
+                img = cv.cvtColor(img, cv.COLOR_BGR2GRAY)
+                img = img[40:120, 105:215]
+                cv.imwrite('test.png', img)
+                obstacle = obs.detect_obstacle(cv.imread("test.png"))
+
+            print(f'Obstacle: {obstacle}')
 
             if obstacle == nac.CAR:
                 self.switch_to_state(nac.TAILING_CAR)
@@ -1982,17 +1956,18 @@ error:{overshoot_distance:.2f}')
     def brainless(self):
         self.activate_routines([])
         if self.curr_state.just_switched:
-            self.curr_state.var1 = self.car.encoder_distance
+            self.curr_state.var2 = self.car.encoder_distance
             self.curr_state.just_switched = False
 
-        if self.car.encoder_distance - self.curr_state.var1 < 0.5:
+        print(self.car.encoder_distance - self.curr_state.var2)
+        if self.car.encoder_distance - self.curr_state.var2 < 0.5:
             e2, e3, point_ahead = self.detect.detect_lane(self.car.frame,
                                                           SHOW_IMGS)
             _, output_angle = self.controller.get_control(e2, e3, 0,
                                                           self.desired_speed)
             self.car.drive(speed=0.5,
                            angle=np.rad2deg(output_angle))
-        elif self.car.encoder_distance - self.curr_state.var1 < BRAINLESS_MAXD:
+        elif self.car.encoder_distance - self.curr_state.var2 < BRAINLESS_MAXD:
             e3, _ = self.detect.detect_lane_ahead(self.car.frame,
                                                   show_ROI=SHOW_IMGS)
             output_speed, output_angle = self.controller_ag.get_control(e3)
