@@ -359,6 +359,7 @@ class Brain:
         self.env = env
 
         self.car.drive(speed=0.0, angle=0.0)
+        self.laremilputas = None
 
         # navigation instruction is a list of tuples:
         self.navigation_instructions = []
@@ -1955,19 +1956,19 @@ error:{overshoot_distance:.2f}')
 
     def brainless(self):
         self.activate_routines([])
-        if self.curr_state.just_switched:
-            self.curr_state.var2 = self.car.encoder_distance
+        if self.laremilputas is None:
+            self.laremilputas = self.car.encoder_distance
             self.curr_state.just_switched = False
 
-        print(self.car.encoder_distance - self.curr_state.var2)
-        if self.car.encoder_distance - self.curr_state.var2 < 0.5:
+        print(self.car.encoder_distance - self.laremilputas)
+        if self.car.encoder_distance - self.laremilputas < 0.5:
             e2, e3, point_ahead = self.detect.detect_lane(self.car.frame,
                                                           SHOW_IMGS)
             _, output_angle = self.controller.get_control(e2, e3, 0,
                                                           self.desired_speed)
             self.car.drive(speed=0.5,
                            angle=np.rad2deg(output_angle))
-        elif self.car.encoder_distance - self.curr_state.var2 < BRAINLESS_MAXD:
+        elif self.car.encoder_distance - self.laremilputas < BRAINLESS_MAXD:
             e3, _ = self.detect.detect_lane_ahead(self.car.frame,
                                                   show_ROI=SHOW_IMGS)
             output_speed, output_angle = self.controller_ag.get_control(e3)
