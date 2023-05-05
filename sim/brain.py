@@ -27,10 +27,13 @@ SHOW_IMGS = False
 
 # To start from the start node (86) use [-42, -42]
 STARTING_COORDS = [-42, -42]
+STARTING_COORDS = [5.27, 8.75]  # Upwards
+STARTING_COORDS = [7.60, 3.93]  # Pre round - Full round
+STARTING_COORDS = [11.55, 3.55]  # Pre round - Half round
 
 END_NODE = 85
 
-CHECKPOINTS = [86, 430, 193, 141, 349, 85]  # complete track - old
+# CHECKPOINTS = [86, 430, 193, 141, 349, 85]  # complete track - old
 
 if not SPEED_CHALLENGE:
     CHECKPOINTS = [86, 430, 197, 112, 349, 113, 134, 146, END_NODE]
@@ -215,7 +218,7 @@ assert GPS_STOPLINE_STOP_DISTANCE <= GPS_STOPLINE_APPROACH_DISTANCE
 
 # <++>
 # STOP_WAIT_TIME = 0.001*3.0 if not SPEED_CHALLENGE else 0.0  # 3.0
-STOP_WAIT_TIME = 1.0 if not SPEED_CHALLENGE else 0.0  # 3.0
+STOP_WAIT_TIME = 3.0 if not SPEED_CHALLENGE else 0.0  # 3.0
 # local tracking
 OPEN_LOOP_PERCENTAGE_OF_PATH_AHEAD = 0.6  # 0.6
 # distance from previous stopline from which is possible to
@@ -317,7 +320,7 @@ OT_STATIC_LANE_FOLLOW = 0.3
 # overtake moving car
 OVERTAKE_MOVING_CAR_SPEED = 0.5  # [m/s]
 OT_MOVING_SWITCH_1 = 0.27  # [m]
-OT_MOVING_LANE_FOLLOW = 1.45  # [m]
+OT_MOVING_LANE_FOLLOW = 1.50  # [m]
 OT_MOVING_SWITCH_2 = 0.27  # [m]
 # roadblock
 RB_NODES_LEFT_LANE = ['16', '138', '137', '136', '135', '134', '7']
