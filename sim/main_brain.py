@@ -1,5 +1,5 @@
 #!/usr/bin/python3
-from brain import SIMULATOR_FLAG, SHOW_IMGS
+from brain import SIMULATOR_FLAG, SPEED_CHALLENGE, SHOW_IMGS
 
 import os
 import signal
@@ -17,6 +17,7 @@ else:  # PI
 from path_planning4 import PathPlanning
 from controller3 import Controller
 from controllerSP import ControllerSpeed
+from controllerAG import ControllerSpeed as ControllerBL
 from detection import Detection
 from brain import Brain
 from environmental_data_simulator import EnvironmentalData
@@ -29,10 +30,20 @@ track = cv.imread('data/2021_VerySmall.png')
 # PARAMETERS
 TARGET_FPS = 30.0
 sample_time = 0.01  # [s]
-DESIRED_SPEED = 0.35  # [m/s]
-# DESIRED_SPEED = 0.8  # [m/s]
-SP_SPEED = 0.2  # [m/s]
-CURVE_SPEED = 0.3*0.6  # [m/s]
+
+if not SPEED_CHALLENGE:
+    DESIRED_SPEED = 0.35  # [m/s]
+    SP_SPEED = 0.25  # [m/s]
+    CURVE_SPEED = 0.2  # [m/s]
+    BL_SP_SPEED = 0.8
+    BL_CURVE_SPEED = 0.5
+else:
+    DESIRED_SPEED = 0.4  # [m/s]
+    SP_SPEED = 0.6  # [m/s]
+    CURVE_SPEED = 0.4  # [m/s]
+    BL_SP_SPEED = 0.8
+    BL_CURVE_SPEED = 0.4
+
 path_step_length = 0.01  # [m]
 # CONTROLLER
 k1 = 0.0  # 0.0 gain error parallel to direction (speed)
@@ -76,7 +87,7 @@ if __name__ == '__main__':
 
     # init the car data
     if SIMULATOR_FLAG:
-        # os.system('rosservice call /gazebo/reset_simulation')
+        os.system('rosservice call /gazebo/reset_simulation')
         os.system('rosservice call gazebo/unpause_physics')
         car = AutomobileDataSimulator(trig_cam=True,
                                       trig_gps=True,
@@ -110,12 +121,16 @@ if __name__ == '__main__':
                             ff=ff_curvature)
     controller_sp = ControllerSpeed(desired_speed=SP_SPEED,
                                     curve_speed=CURVE_SPEED)
+    controller_ag = ControllerBL(straight_speed=BL_SP_SPEED,
+                                 curve_speed=BL_CURVE_SPEED,
+                                 lookahead=0.8)
 
     # initiliaze all the neural networks for detection and lane following
     detect = Detection()
 
     # initiliaze the brain
     brain = Brain(car=car, controller=controller, controller_sp=controller_sp,
+                  controller_ag=controller_ag,
                   detection=detect, env=env, path_planner=path_planner,
                   desired_speed=DESIRED_SPEED)
 

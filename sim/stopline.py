@@ -506,6 +506,8 @@ def detect_angle(original_frame=None, plot=False):
         return np.deg2rad(31.0)
     elif final_angle < np.deg2rad(-31.0):
         return np.deg2rad(-31.0)
+    elif final_angle is None:
+        return 0.0
     return final_angle
 
 

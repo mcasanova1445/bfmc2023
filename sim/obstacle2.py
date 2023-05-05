@@ -35,11 +35,11 @@ class Obstacle:
                 self.maxVal[i] = 0
             if (i < 5):
                 car_score += self.maxVal[i]
-            else:
-                rb_score += self.maxVal[i]
+            # else:
+            #     rb_score += self.maxVal[i]
 
             print('Total car score: ' + str(car_score))
-            print('Total roadblock score: ' + str(rb_score))
+            # print('Total roadblock score: ' + str(rb_score))
 
         if car_score > 4 or rb_score > 4:
             if (car_score >= rb_score):

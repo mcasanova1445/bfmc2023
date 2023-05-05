@@ -1,5 +1,5 @@
 #!/usr/bin/python3
-from names_and_constants import SIMULATOR_FLAG
+from names_and_constants import SIMULATOR_FLAG, SPEED_CHALLENGE
 
 import numpy as np
 import cv2 as cv
@@ -15,6 +15,7 @@ else:
 from path_planning4 import PathPlanning
 from controller3 import Controller
 from controllerSP import ControllerSpeed
+from controllerAG import ControllerSpeed as ControllerBL
 from detection import Detection
 from environmental_data_simulator import EnvironmentalData
 from obstacle2 import Obstacle
@@ -24,51 +25,19 @@ from parkman import Maneuvers
 
 SHOW_IMGS = False
 
+# To start from the start node (86) use [-42, -42]
+STARTING_COORDS = [-42, -42]
+
 END_NODE = 85
-# CHECKPOINTS = [299, 275] #roundabout
-# CHECKPOINTS = [86, 99, 116] #left right left right
-# complete track#[86, 430, 193, 141, 346, 85] #complete track
-CHECKPOINTS = [86, 430, 193, 141, 349, 85]  # complete track
 
-# CHECKPOINTS = [300, 346, 85]  # complete track
-CHECKPOINTS = [430, 232, 141, 349, 85]  # complete track
-# CHECKPOINTS = [430, 260, 141, 349, 85]  # complete track
+CHECKPOINTS = [86, 430, 193, 141, 349, 85]  # complete track - old
 
-# CHECKPOINTS = [134, 145, 193, 141, 346, 85]  # roadblock
-# CHECKPOINTS = [300, 273, 141, 346, 85]  # full round
-# CHECKPOINTS = [300, 344, 141, 346, 85]  # first exit
-# CHECKPOINTS = [300, 232, 141, 346, 85]  # second exit
-# CHECKPOINTS = [113, 101, 141, 346, 85]  # left
-# CHECKPOINTS = [100, 112, 141, 346, 85]  # right
+CHECKPOINTS = [86, 430, 197, 112, 349, 113, 134, 145, END_NODE]  # La Tecnique
+# CHECKPOINTS = [86, 430, 197, 123]  # Speed Challenge - easy
+# CHECKPOINTS = [86, 430, 229, 265, 146, 121]  # Speed Challenge - hard
 
-# CHECKPOINTS = [113, 111, 141, 346, 85]  # straight
-# CHECKPOINTS = [86, 347, 141, 346, 85]  # no bumpy
-# CHECKPOINTS = [86, 345, 193, 141, 346, 85]  # complete track
-# CHECKPOINTS = [86, 234, 193, 141, 346, 85]  # complete track
-# CHECKPOINTS = [86, 341, 193, 141, 346, 85]  # no bumpy
-# CHECKPOINTS = [86, 85]  # to the end
-# CHECKPOINTS = [86, 255, 110, 346, END_NODE]
-# CHECKPOINTS = [86, 235, END_NODE]
-
-# CHECKPOINTS = [86, 110, 134, 146]  # rb on R lane from start
-# CHECKPOINTS = [110, 134, 146]  # rb on R lane from start
-# CHECKPOINTS = [113, 134, 145, 345]  # rb on L lane, right-t to single-w n HW
-# CHECKPOINTS = [465, 173]  # rb on L lane, right turn to single way and HW
-# CHECKPOINTS = [430, 229, 236]  # rb on L lane, right turn to single way n HW
-# CHECKPOINTS = [265, 190]  # rb on L lane, right turn to single way and HW
-
-CHECKPOINTS = [265, 129]  # parking + ramp
-CHECKPOINTS = [180, 129]  # parking + ramp
-# CHECKPOINTS = [86, 110, 134, 146]  # rb on R lane from start
-# CHECKPOINTS = [113, 134, 145]  # rb on L lane, right turn to single way n HW
-# CHECKPOINTS = [86, 87, 90, 49, 309, 311, 314,
-#                426, 467, 468, 229, 232, 197, 144, 146, 121] # Speed Challenge
-CHECKPOINTS = [86, 430, 229, 265, 146, 121]  # Speed Challenge reduced
-
-# CHECKPOINTS = [430, 275]
-# CHECKPOINTS = [430, 240]
-
-SPEED_CHALLENGE = False
+CHECKPOINTS = [263, 184]
+CHECKPOINTS = [90, 430, 104]
 
 ALWAYS_USE_VISION_FOR_STOPLINES = True
 
@@ -80,18 +49,18 @@ assert not (ALWAYS_TRUST_GPS and ALWAYS_DISTRUST_GPS), \
         'ALWAYS_TRUST_GPS and ALWAYS_DISTRUST_GPS cannot be both True'
 
 # Templates for obstacle detection
-num_tem = 10
+num_tem = 5
 tem = []
 tem.append(cv.imread("templates/car1.png"))
 tem.append(cv.imread("templates/car2.png"))
 tem.append(cv.imread("templates/car3.png"))
 tem.append(cv.imread("templates/car4.png"))
 tem.append(cv.imread("templates/car5.png"))
-tem.append(cv.imread("templates/rb1.png"))
-tem.append(cv.imread("templates/rb2.png"))
-tem.append(cv.imread("templates/rb3.png"))
-tem.append(cv.imread("templates/rb4.png"))
-tem.append(cv.imread("templates/rb5.png"))
+# tem.append(cv.imread("templates/rb1.png"))
+# tem.append(cv.imread("templates/rb2.png"))
+# tem.append(cv.imread("templates/rb3.png"))
+# tem.append(cv.imread("templates/rb4.png"))
+# tem.append(cv.imread("templates/rb5.png"))
 obs = Obstacle(tem, num_tem)
 
 park = Maneuvers()
@@ -160,6 +129,9 @@ class Event:
         # [x,y] position on the map of the event
         self.point = point
         self.yaw_stopline = yaw_stopline  # yaw of the stop line at the event
+        # <++>
+        # if self.yaw_stopline is None:
+        #     self.yaw_stopline = 0.0
         # sequence of points after the event,
         # only for intersections or roundabouts
         self.path_ahead = path_ahead
@@ -353,6 +325,8 @@ AVOID_ROADBLOCK_DISTANCE = 0.7  # [m]
 MAX_DIST_AWAY_FROM_LANE = 0.8
 MAX_ERROR_ON_LOCAL_DIST = 0.05  # [m] max error on the local distance
 
+BRAINLESS_MAXD = 18
+
 
 # ==============================================================
 # =========================== BRAIN ============================
@@ -362,6 +336,7 @@ class Brain:
                  car: Automobile_Data,
                  controller: Controller,
                  controller_sp: ControllerSpeed,
+                 controller_ag: ControllerBL,
                  env: EnvironmentalData,
                  detection: Detection,
                  path_planner: PathPlanning,
@@ -372,9 +347,12 @@ class Brain:
         self.car = car
         self.controller = controller
         self.controller_sp = controller_sp
+        self.controller_ag = controller_ag
         self.detect = detection
         self.path_planner = path_planner
         self.env = env
+
+        self.car.drive(speed=0.0, angle=0.0)
 
         # navigation instruction is a list of tuples:
         self.navigation_instructions = []
@@ -531,7 +509,14 @@ Starting from the first checkpoint')
                 sleep(3.0)
                 break
             if ALWAYS_DISTRUST_GPS:
-                if len(self.car.x_buffer) < 5:
+                if STARTING_COORDS != [-42, -42]:
+                    curr_pos = np.array(STARTING_COORDS)
+                    closest_node, distance = self.path_planner.\
+                        get_closest_node(curr_pos)
+                    self.checkpoints[self.checkpoint_idx] = closest_node
+                    self.car.x_est = curr_pos[0]
+                    self.car.y_est = curr_pos[1]
+                elif len(self.car.x_buffer) < 5:
                     node_coords = self.path_planner.get_coord(
                         str(self.checkpoints[0]))
                     self.car.x_est = node_coords[0]
@@ -596,10 +581,7 @@ Starting from the first checkpoint')
 
         self.car_dist_on_path = 0
 
-        if end_node == END_NODE and SPEED_CHALLENGE:
-            self.switch_to_state(nac.BRAINLESS)
-        else:
-            self.switch_to_state(nac.LANE_FOLLOWING)
+        self.switch_to_state(nac.LANE_FOLLOWING)
 
     def end_state(self):
         self.activate_routines([nac.SLOW_DOWN])
@@ -614,7 +596,15 @@ Starting from the first checkpoint')
 
     def lane_following(self):  # LANE FOLLOWING ##############################
         # highway conditions
+        if self.prev_event.name == nac.JUNCTION_EVENT and SPEED_CHALLENGE:
+            self.switch_to_state(nac.BRAINLESS)
+
         if self.conditions[nac.HIGHWAY]:
+            self.activate_routines([nac.FOLLOW_LANE,
+                                    nac.DETECT_STOPLINE,
+                                    nac.CONTROL_FOR_OBSTACLES,
+                                    nac.ACCELERATE])
+        elif self.conditions[nac.BUMPY_ROAD] and SPEED_CHALLENGE:
             self.activate_routines([nac.FOLLOW_LANE,
                                     nac.DETECT_STOPLINE,
                                     nac.CONTROL_FOR_OBSTACLES,
@@ -699,7 +689,9 @@ self intersected.')
         approx_dist_from_parking = dist_between_events - self.car.dist_loc
         print(f'Approx dist from parking: {approx_dist_from_parking}')
         # we are reasonably close to the parking spot
-        if approx_dist_from_parking < PARKING_DISTANCE_SLOW_DOWN_THRESHOLD:
+        if SPEED_CHALLENGE:
+            self.switch_to_state(nac.PARKING)
+        elif approx_dist_from_parking < PARKING_DISTANCE_SLOW_DOWN_THRESHOLD:
             self.car.drive_speed(0.0)
             sleep(SLEEP_AFTER_STOPPING)
             self.switch_to_state(nac.PARKING)
@@ -724,21 +716,14 @@ straight for exiting')
 
         else:
             diff = self.car.encoder_distance - self.curr_state.var1
-            if diff < 2.8:
+            if diff < 2.0:
                 print(f'Driving toward highway exit: dist so far \
 {diff:.2f} [m]')
-            elif diff < 3.6:
+            elif diff < 4.0:
                 print(f'Driving toward highway exit: dist so far \
 {diff:.2f} [m]')
 
-                e3, _ = self.detect.detect_intersection_right(self.car.frame,
-                                                              show_ROI=False)
-                output_speed, output_angle = self.\
-                    controller_sp.get_control_speed(0.0, 0.0, e3)
-                print(f'output_speed: {output_speed:.2f}, output_angle: \
-{np.rad2deg(output_angle):.2f}')
-                self.car.drive(speed=output_speed,
-                               angle=np.rad2deg(output_angle))
+                self.car.drive_angle(angle=0)
             else:
                 print('Arrived at highway exit, switching to going \
 straight for exiting')
@@ -782,10 +767,11 @@ straight for exiting')
 
     def approaching_stopline(self):
         # FOLLOW_LANE, SLOW_DOWN, DETECT_STOPLINE, CONTROL_FOR_OBSTACLES
-        self.activate_routines([nac.FOLLOW_LANE,
-                                nac.SLOW_DOWN,
-                                nac.DETECT_STOPLINE,
-                                nac.CONTROL_FOR_OBSTACLES])
+        if not SPEED_CHALLENGE:
+            self.activate_routines([nac.FOLLOW_LANE,
+                                    nac.SLOW_DOWN,
+                                    nac.DETECT_STOPLINE,
+                                    nac.CONTROL_FOR_OBSTACLES])
 
         if self.curr_state.just_switched:
             cv.imwrite(f'asl/asl_{int(time() * 1000)}.png', self.car.frame)
@@ -1038,9 +1024,11 @@ better aligned, alpha = {alpha}'
             print('curvy')
 
         # State exit conditions
-        if self.next_event.name.startswith("junction") and \
-           self.curr_state.var4 == "left":
-            max_idx = max_idx * 0.60
+        if self.next_event.name.startswith("junction"):
+            if self.curr_state.var4 == "right":
+                max_idx = max_idx * 0.80
+            else:
+                max_idx = max_idx * 0.60
         if idx_point_ahead >= max_idx:  # we reached the end of the path
             self.switch_to_state(nac.LANE_FOLLOWING)
             self.go_to_next_event()
@@ -1334,6 +1322,11 @@ is too large, we are too far from the lane')
             self.error('ERROR: AVOIDING_ROADBLOCK: Wrong substate')
 
     def parking(self):
+        if SPEED_CHALLENGE:
+            self.car.drive(speed=0.4, angle=0.0)
+            sleep(2)
+            self.parking_end()
+            return
         # Substates
         if self.curr_state.just_switched:
             # We just got in the parking state, we came from lane following,
@@ -1954,6 +1947,12 @@ error:{overshoot_distance:.2f}')
 
             # TODO: add conditions to filter out false positives
 
+            if self.checkpoints[self.checkpoint_idx] == 134:
+                obstacle = nac.ROADBLOCK
+            elif (self.conditions[nac.BUMPY_ROAD] or
+                    self.conditions[nac.HIGHWAY]):
+                obstacle = nac.CAR
+
             if obstacle == nac.CAR:
                 self.switch_to_state(nac.TAILING_CAR)
             elif obstacle == nac.PEDESTRIAN:
@@ -1972,13 +1971,27 @@ error:{overshoot_distance:.2f}')
 
     def brainless(self):
         self.activate_routines([])
-        e3, _ = self.detect.detect_lane_ahead(self.car.frame,
-                                              show_ROI=SHOW_IMGS)
-        output_speed, output_angle = self.controller_sp.get_control_speed(
-                0.0, 0.0, e3)
-        print(f'output_speed: {output_speed:.2f}, output_angle: \
-{np.rad2deg(output_angle):.2f}')
-        self.car.drive(speed=output_speed, angle=np.rad2deg(output_angle))
+        if self.curr_state.just_switched:
+            self.curr_state.var1 = self.car.encoder_distance
+            self.curr_state.just_switched = False
+
+        if self.car.encoder_distance - self.curr_state.var1 < 0.5:
+            e2, e3, point_ahead = self.detect.detect_lane(self.car.frame,
+                                                          SHOW_IMGS)
+            _, output_angle = self.controller.get_control(e2, e3, 0,
+                                                          self.desired_speed)
+            self.car.drive(speed=0.5,
+                           angle=np.rad2deg(output_angle))
+        elif self.car.encoder_distance - self.curr_state.var1 < BRAINLESS_MAXD:
+            e3, _ = self.detect.detect_lane_ahead(self.car.frame,
+                                                  show_ROI=SHOW_IMGS)
+            output_speed, output_angle = self.controller_ag.get_control(e3)
+            self.car.drive(speed=output_speed,
+                           angle=np.rad2deg(output_angle))
+        else:
+            self.switch_to_state(nac.LANE_FOLLOWING)
+            self.go_to_next_event()
+            self.go_to_next_event()
 
     # =============== ROUTINES =============== #
     def follow_lane(self):
@@ -2204,6 +2217,7 @@ error:{overshoot_distance:.2f}')
 ===========')
         print(f'CHECKPOINT:     {self.checkpoints[self.checkpoint_idx]}')
         print(f'STATE:          {self.curr_state}')
+        print(f'PREV_EVENT:     {self.prev_event}')
         print(f'UPCOMING_EVENT: {self.next_event}')
         print(f'ROUTINES:    {self.active_routines_names+ALWAYS_ON_ROUTINES}')
         print(f'CONDITIONS:  {self.conditions}')
@@ -2301,6 +2315,16 @@ invalid routine'
         else:
             # it was the last checkpoint
             print('Reached last checkpoint...\nExiting...')
+            enc_start = self.car.encoder_distance
+            if self.checkpoints[-1] == 85:
+                extra_dist = 0.5
+            elif self.checkpoints[-1] == 123:
+                extra_dist = 1.0
+            else:
+                extra_dist = 0.2
+            while self.car.encoder_distance - enc_start < extra_dist:
+                self.follow_lane()
+                sleep(0.1)
             self.car.stop()
             sleep(3)
             cv.destroyAllWindows() if SHOW_IMGS else None
