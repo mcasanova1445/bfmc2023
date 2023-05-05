@@ -210,7 +210,9 @@ GPS_STOPLINE_STOP_DISTANCE = 0.5
 assert STOPLINE_STOP_DISTANCE <= STOPLINE_APPROACH_DISTANCE
 assert GPS_STOPLINE_STOP_DISTANCE <= GPS_STOPLINE_APPROACH_DISTANCE
 
-STOP_WAIT_TIME = 0.001*3.0 if not SPEED_CHALLENGE else 0.0  # 3.0
+# <++>
+# STOP_WAIT_TIME = 0.001*3.0 if not SPEED_CHALLENGE else 0.0  # 3.0
+STOP_WAIT_TIME = 1.0 if not SPEED_CHALLENGE else 0.0  # 3.0
 # local tracking
 OPEN_LOOP_PERCENTAGE_OF_PATH_AHEAD = 0.6  # 0.6
 # distance from previous stopline from which is possible to
@@ -728,7 +730,7 @@ straight for exiting')
                 print(f'Driving toward highway exit: dist so far \
 {diff:.2f} [m]')
 
-                self.car.drive_angle(angle=00)
+                self.car.drive_angle(angle=0.0)
             else:
                 print('Arrived at highway exit, switching to going \
 straight for exiting')
@@ -1887,7 +1889,7 @@ error:{overshoot_distance:.2f}')
             if self.curr_state.just_switched:
                 self.car.drive_speed(0.0)
                 self.curr_state.just_switched = False
-            if (time() - self.curr_state.start_time) > STOP_WAIT_TIME:
+            if (time() - self.curr_state.start_time) > STOP_WAIT_TIME + 2.0:
                 self.car.reset_rel_pose()
                 self.go_to_next_event()
                 self.switch_to_state(nac.LANE_FOLLOWING)
