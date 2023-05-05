@@ -18,8 +18,8 @@ class ControllerSpeed():
                  ac_max=0.1, 
                  lookahead=0.8,
                  Kpp_straight = 1.0,
-                 Kpp_curve = 1.0,
-                 Kd = 0.15,
+                 Kpp_curve = 2.0,
+                 Kd = 0.1,
                  alpha_straight = 3,
                  alpha_curve = 11):
         # ============================================================
