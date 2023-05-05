@@ -33,11 +33,12 @@ END_NODE = 85
 CHECKPOINTS = [86, 430, 193, 141, 349, 85]  # complete track - old
 
 CHECKPOINTS = [86, 430, 197, 112, 349, 113, 134, 145, END_NODE]  # La Tecnique
-# CHECKPOINTS = [86, 430, 197, 123]  # Speed Challenge - easy
+CHECKPOINTS = [90, 430, 197, 112, 349, 113, 134, 145, END_NODE]  # La Tecnique
+CHECKPOINTS = [86, 430, 197, 123]  # Speed Challenge - easy
 # CHECKPOINTS = [86, 430, 229, 265, 146, 121]  # Speed Challenge - hard
 
-CHECKPOINTS = [263, 184]
-CHECKPOINTS = [90, 430, 104]
+# CHECKPOINTS = [263, 184]
+# CHECKPOINTS = [90, 430, 104]
 
 ALWAYS_USE_VISION_FOR_STOPLINES = True
 
@@ -177,7 +178,7 @@ ACHIEVEMENTS = {
 SIGN_DIST_THRESHOLD = 0.5
 # sempahores
 SEMAPHORE_IS_ALWAYS_GREEN = False if not SIMULATOR_FLAG else True
-SEMAPHORE_IS_ALWAYS_GREEN = True
+# SEMAPHORE_IS_ALWAYS_GREEN = True
 
 DEQUE_OF_PAST_FRAMES_LENGTH = 50
 DISTANCES_BETWEEN_FRAMES = 0.03
@@ -716,14 +717,18 @@ straight for exiting')
 
         else:
             diff = self.car.encoder_distance - self.curr_state.var1
+            print("##########################################")
+            print("diff = ", diff)
+            print("##########################################")
             if diff < 2.0:
                 print(f'Driving toward highway exit: dist so far \
 {diff:.2f} [m]')
-            elif diff < 4.0:
+            elif diff < 3.2:
+                self.activate_routines([])
                 print(f'Driving toward highway exit: dist so far \
 {diff:.2f} [m]')
 
-                self.car.drive_angle(angle=0)
+                self.car.drive_angle(angle=00)
             else:
                 print('Arrived at highway exit, switching to going \
 straight for exiting')
@@ -2221,6 +2226,7 @@ error:{overshoot_distance:.2f}')
         print(f'UPCOMING_EVENT: {self.next_event}')
         print(f'ROUTINES:    {self.active_routines_names+ALWAYS_ON_ROUTINES}')
         print(f'CONDITIONS:  {self.conditions}')
+        print(f'ENCODER:  {self.car.encoder_distance}')
         print('===============================================================\
 ===========')
         self.run_current_state()
