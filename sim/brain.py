@@ -32,9 +32,12 @@ END_NODE = 85
 
 CHECKPOINTS = [86, 430, 193, 141, 349, 85]  # complete track - old
 
-CHECKPOINTS = [86, 430, 197, 112, 349, 113, 134, 145, END_NODE]  # La Tecnique
-CHECKPOINTS = [90, 430, 197, 112, 349, 113, 134, 145, END_NODE]  # La Tecnique
-CHECKPOINTS = [86, 430, 197, 123]  # Speed Challenge - easy
+if not SPEED_CHALLENGE:
+    CHECKPOINTS = [86, 430, 197, 112, 349, 113, 134, 146, END_NODE]
+else:
+    CHECKPOINTS = [86, 430, 197, 123]
+
+# CHECKPOINTS = [90, 430, 197, 112, 349, 113, 134, 145, END_NODE]  # La Tecnique
 # CHECKPOINTS = [86, 430, 229, 265, 146, 121]  # Speed Challenge - hard
 
 # CHECKPOINTS = [263, 184]
@@ -313,9 +316,9 @@ OT_STATIC_SWITCH_2 = 0.55
 OT_STATIC_LANE_FOLLOW = 0.3
 # overtake moving car
 OVERTAKE_MOVING_CAR_SPEED = 0.5  # [m/s]
-OT_MOVING_SWITCH_1 = 0.3  # [m]
-OT_MOVING_LANE_FOLLOW = 1.420  # [m]
-OT_MOVING_SWITCH_2 = 0.3  # [m]
+OT_MOVING_SWITCH_1 = 0.27  # [m]
+OT_MOVING_LANE_FOLLOW = 1.45  # [m]
+OT_MOVING_SWITCH_2 = 0.27  # [m]
 # roadblock
 RB_NODES_LEFT_LANE = ['16', '138', '137', '136', '135', '134', '7']
 RB_NODES_RIGHT_LANE = ['15', '143', '142', '141', '140', '139', '8']
@@ -725,7 +728,7 @@ straight for exiting')
             if diff < 2.0:
                 print(f'Driving toward highway exit: dist so far \
 {diff:.2f} [m]')
-            elif diff < 3.2:
+            elif diff < 3.4:
                 self.activate_routines([])
                 print(f'Driving toward highway exit: dist so far \
 {diff:.2f} [m]')
@@ -1289,7 +1292,7 @@ is too large, we are too far from the lane')
                     start_encoder_pos = self.car.encoder_distance
 
                 self.checkpoints[self.checkpoint_idx] = curr_check_new
-                self.checkpoints.insert(self.checkpoint_idx+1, next_check_new)
+                self.checkpoints[self.checkpoint_idx+1] = next_check_new
 
                 start_node = self.checkpoints[self.checkpoint_idx]
                 # already checked in end_state
@@ -1318,7 +1321,7 @@ is too large, we are too far from the lane')
                 start_encoder_pos = self.curr_state.var1
                 curr_encoder_dist = self.car.encoder_distance
                 if curr_encoder_dist - start_encoder_pos > \
-                        AVOID_ROADBLOCK_DISTANCE*0.6:
+                        AVOID_ROADBLOCK_DISTANCE*0.55:
                     self.car.drive_angle(avoid_angle)
                 if curr_encoder_dist - start_encoder_pos > \
                         AVOID_ROADBLOCK_DISTANCE:

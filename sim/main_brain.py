@@ -33,8 +33,8 @@ sample_time = 0.01  # [s]
 
 if not SPEED_CHALLENGE:
     DESIRED_SPEED = 0.35  # [m/s]
-    SP_SPEED = 0.25  # [m/s]
-    CURVE_SPEED = 0.2  # [m/s]
+    SP_SPEED = 0.35  # [m/s]
+    CURVE_SPEED = 0.25  # [m/s]
     BL_SP_SPEED = 0.8
     BL_CURVE_SPEED = 0.5
 else:
@@ -87,7 +87,7 @@ if __name__ == '__main__':
 
     # init the car data
     if SIMULATOR_FLAG:
-        os.system('rosservice call /gazebo/reset_simulation')
+        # os.system('rosservice call /gazebo/reset_simulation')
         os.system('rosservice call gazebo/unpause_physics')
         car = AutomobileDataSimulator(trig_cam=True,
                                       trig_gps=True,

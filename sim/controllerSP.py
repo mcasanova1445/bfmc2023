@@ -131,10 +131,11 @@ class ControllerSpeed():
             # ===== OUTPUT ANGLE =====
             output_angle = delta_pp  # + delta_i
 
-            if output_angle > np.deg2rad(28):
-                output_angle = np.deg2rad(28)
-            if output_angle < np.deg2rad(-28):
-                output_angle = np.deg2rad(-28)
+            # <++> Changed from 28
+            if output_angle > np.deg2rad(25):
+                output_angle = np.deg2rad(25)
+            if output_angle < np.deg2rad(-25):
+                output_angle = np.deg2rad(-25)
 
             self.prev_time = curr_time
             self.alpha_long_prev = self.alpha_long

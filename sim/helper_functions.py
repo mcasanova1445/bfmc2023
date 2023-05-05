@@ -494,7 +494,7 @@ def navigate_intersection(brain, show):
     if brain.curr_state.var4 == "right":
         e3, _ = brain.detect.detect_intersection_right(brain.car.frame,
                                                        show_ROI=show)
-        e3 = 1.05 * e3
+        e3 = 1.0 * e3
     elif brain.curr_state.var4 == "left":
         e3, _ = brain.detect.detect_intersection_left(brain.car.frame,
                                                       show_ROI=show)
