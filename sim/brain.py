@@ -43,9 +43,11 @@ if not SPEED_CHALLENGE:
     CHECKPOINTS = [86, 430, 197, 112, 349, 113, 134, 146, END_NODE]  # THIS
     # CHECKPOINTS = [300, 349, 113, 134, 146, END_NODE]
     # CHECKPOINTS = [430, 197, 112, 349, 113, 134, 146, END_NODE]
+    CHECKPOINTS = [146, 108]
 else:
     # CHECKPOINTS = [86, 430, 197, 123]  # THIS
     CHECKPOINTS = [146, 123]
+    # CHECKPOINTS = [146, 108]
 
 # CHECKPOINTS = [90, 430, 197, 112, 349, 113, 134, 145, END_NODE]  # La Tecnique
 # CHECKPOINTS = [86, 430, 229, 265, 146, 121]  # Speed Challenge - hard
@@ -797,6 +799,11 @@ straight for exiting')
                                     nac.SLOW_DOWN,
                                     nac.DETECT_STOPLINE,
                                     nac.CONTROL_FOR_OBSTACLES])
+        # else:
+        #     if self.event_idx > len(self.events) - 2:
+        #         # if self.checkpoint_idx >= (len(self.checkpoints)-2):
+        #         raise KeyboardInterrupt
+
 
         if self.curr_state.just_switched:
             cv.imwrite(f'asl/asl_{int(time() * 1000)}.png', self.car.frame)
@@ -2320,16 +2327,19 @@ invalid routine'
         else:
             # it was the last checkpoint
             print('Reached last checkpoint...\nExiting...')
-            self.car.drive_angle(angle=0.0)
+            # self.car.drive_angle(angle=0.0)
             enc_start = self.car.encoder_distance
             if self.checkpoints[-1] == 85:
-                extra_dist = 0.5
+                extra_dist = 0.4
+                self.car.drive(speed=0.2, angle=0.0)
             elif self.checkpoints[-1] == 123:
-                extra_dist = 1.0
+                extra_dist = 0.5
+                self.car.drive(speed=0.2, angle=3.0)
             else:
                 extra_dist = 0.2
+                self.car.drive(speed=0.2, angle=0.0)
             while self.car.encoder_distance - enc_start < extra_dist:
-                self.follow_lane()
+                # self.follow_lane()
                 sleep(0.1)
             self.car.stop()
             sleep(3)
