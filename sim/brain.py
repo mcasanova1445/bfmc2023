@@ -27,9 +27,9 @@ SHOW_IMGS = False
 
 # To start from the start node (86) use [-42, -42]
 STARTING_COORDS = [-42, -42]
-STARTING_COORDS = [5.27, 8.75]  # Upwards
-STARTING_COORDS = [7.60, 3.93]  # Pre round - Full round
-STARTING_COORDS = [11.55, 3.55]  # Pre round - Half round
+# STARTING_COORDS = [5.27, 8.75]  # Upwards
+# STARTING_COORDS = [7.60, 3.93]  # Pre round - Full round
+# STARTING_COORDS = [11.55, 3.55]  # Pre round - Half round
 
 END_NODE = 85
 
@@ -39,6 +39,7 @@ if not SPEED_CHALLENGE:
     CHECKPOINTS = [86, 430, 197, 112, 349, 113, 134, 146, END_NODE]
 else:
     CHECKPOINTS = [86, 430, 197, 123]
+    CHECKPOINTS = [430, 197, 123]
 
 # CHECKPOINTS = [90, 430, 197, 112, 349, 113, 134, 145, END_NODE]  # La Tecnique
 # CHECKPOINTS = [86, 430, 229, 265, 146, 121]  # Speed Challenge - hard
@@ -228,7 +229,7 @@ POINT_AHEAD_DISTANCE_LOCAL_TRACKING = 0.3  # 0.3
 
 # speed control
 # multiplier for desired speed, used to regulate highway speed
-ACCELERATION_CONST = 1.4
+ACCELERATION_CONST = 1.2
 SLOW_DOWN_CONST = 0.3
 
 # highway exit
@@ -334,7 +335,7 @@ AVOID_ROADBLOCK_DISTANCE = 0.7  # [m]
 MAX_DIST_AWAY_FROM_LANE = 0.8
 MAX_ERROR_ON_LOCAL_DIST = 0.05  # [m] max error on the local distance
 
-BRAINLESS_MAXD = 18
+BRAINLESS_MAXD = 15
 
 
 # ==============================================================
@@ -1093,8 +1094,13 @@ better aligned, alpha = {alpha}'
                 self.switch_to_state(nac.LANE_FOLLOWING)
 
     def waiting_for_green(self):
+        event_p = self.next_event.point
+        # event_x = self.next_event.point[0]
+        # event_y = self.next_event.point[1]
         semaphore, tl_state = self.env.get_closest_semaphore_state(
-                np.array([self.car.x_est, self.car.y_est]))
+                np.array(event_p))
+        # semaphore, tl_state = self.env.get_closest_semaphore_state(
+        #         np.array([event_x, event_y]))
         print(f'Waiting at semaphore: {semaphore}, state: {tl_state}')
         if self.curr_state.just_switched:
             self.activate_routines([])
@@ -2210,7 +2216,6 @@ error:{overshoot_distance:.2f}')
         print(f'UPCOMING_EVENT: {self.next_event}')
         print(f'ROUTINES:    {self.active_routines_names+ALWAYS_ON_ROUTINES}')
         print(f'CONDITIONS:  {self.conditions}')
-        print(f'ENCODER:  {self.car.encoder_distance}')
         print('===============================================================\
 ===========')
         self.run_current_state()
