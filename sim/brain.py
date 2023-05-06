@@ -329,11 +329,13 @@ OT_STATIC_LANE_FOLLOW = 0.3
 # overtake moving car
 OVERTAKE_MOVING_CAR_SPEED = 0.5  # [m/s]
 OT_MOVING_SWITCH_1 = 0.27  # [m]
-OT_MOVING_LANE_FOLLOW = 1.50  # [m]
+OT_MOVING_LANE_FOLLOW = 2.00  # [m]
 OT_MOVING_SWITCH_2 = 0.27  # [m]
 # roadblock
-RB_NODES_LEFT_LANE = ['16', '138', '137', '136', '135', '134', '7']
-RB_NODES_RIGHT_LANE = ['15', '143', '142', '141', '140', '139', '8']
+RB_NODES_RIGHT_LANE = ['16', '138', '137', '136', '135', '134', '7']
+RB_NODES_LEFT_LANE = ['15', '143', '142', '141', '140', '139', '8']
+RB_NODES_RIGHT_INT = [16, 138, 137, 136, 135, 134, 7]
+RB_NODES_LEFT_INT = [15, 143, 142, 141, 140, 139, 8]
 AVOID_ROADBLOCK_ANGLE = 27.0  # [deg]
 AVOID_ROADBLOCK_SPEED = 0.2  # [m/s]
 AVOID_ROADBLOCK_DISTANCE = 0.7  # [m]
@@ -509,25 +511,26 @@ class Brain:
         start_time = time()
         while True:
             # get closest node
-            curr_time = time()
-            curr_pos = np.array([self.car.x_est, self.car.y_est])
-            closest_node, distance = self.path_planner.get_closest_node(
-                    curr_pos)
-            # sleep(3.0)
-            if len(self.car.x_buffer) >= 5:
-                print(f'Waiting for gps: \
-{(curr_time-start_time):.1f}/{GPS_TIMEOUT}')
-                self.checkpoints[self.checkpoint_idx] = closest_node
-                if distance > 0.8:
-                    self.error('ERROR: REROUTING: GPS converged, but distance \
-is too large, we are too far from the lane')
-                break
-            if curr_time - start_time > GPS_TIMEOUT:
-                print('WARNING: ROUTE_GENERATION: No gps signal, \
-Starting from the first checkpoint')
+            if not ALWAYS_DISTRUST_GPS:
+                curr_time = time()
+                curr_pos = np.array([self.car.x_est, self.car.y_est])
+                closest_node, distance = self.path_planner.get_closest_node(
+                        curr_pos)
                 sleep(3.0)
-                break
-            if ALWAYS_DISTRUST_GPS:
+                if len(self.car.x_buffer) >= 5:
+                    print(f'Waiting for gps: \
+{(curr_time- start_time):.1f}/{GPS_TIMEOUT}')
+                    self.checkpoints[self.checkpoint_idx] = closest_node
+                    if distance > 0.8:
+                        self.error('ERROR: REROUTING: GPS converged, but \
+distance is too large , we are too far from the lane')
+                    break
+                if curr_time - start_time > GPS_TIMEOUT:
+                    print('WARNING: ROUTE_GENERATION: No gps signal, \
+Starting fro m the first checkpoint')
+                    sleep(3.0)
+                    break
+            else:
                 if STARTING_COORDS != [-42, -42]:
                     curr_pos = np.array(STARTING_COORDS)
                     closest_node, distance = self.path_planner.\
@@ -655,29 +658,29 @@ Starting from the first checkpoint')
         # we are approaching a stopline, check only if we are far enough
         # from the previous stopline
         else:
-            if not self.start_node_validated:
-                if self.curr_state.just_switched:
-                    # initial position
-                    self.curr_state.var1 = [self.car.x_est, self.car.y_est]
-                    self.curr_state.just_switched = False
-                ladistancedeldiocane = np.\
-                    sqrt((self.curr_state.var1[0] - self.car.x_est)**2 +
-                         (self.curr_state.var1[1] - self.car.y_est)**2)
-                print("LA DISTANCE DEL DIO CANE: ", ladistancedeldiocane)
-                closest_node, _ = self.path_planner.get_closest_node(
-                        np.array([self.car.x, self.car.y]))
-                print('CLOSEST NODE: ', closest_node)
-                if closest_node == self.checkpoints[0]:
-                    pass
-                elif closest_node in self.path_planner.route_graph.nodes:
-                    self.start_node_validated = True
-                else:
-                    langledeldiocane = np.round(np.rad2deg(
-                        np.arctan2(self.car.y_est - self.curr_state.var1[1],
-                                   self.car.x_est - self.curr_state.var1[0])))
-                    self.checkpoints[self.checkpoint_idx] = hf.\
-                        switch_lane_check(closest_node, langledeldiocane)
-                    print("<++>")
+            # if not self.start_node_validated:
+            #     if self.curr_state.just_switched:
+            #         # initial position
+            #         self.curr_state.var1 = [self.car.x_est, self.car.y_est]
+            #         self.curr_state.just_switched = False
+            #     ladistancedeldiocane = np.\
+            #         sqrt((self.curr_state.var1[0] - self.car.x_est)**2 +
+            #              (self.curr_state.var1[1] - self.car.y_est)**2)
+            #     print("LA DISTANCE DEL DIO CANE: ", ladistancedeldiocane)
+            #     closest_node, _ = self.path_planner.get_closest_node(
+            #             np.array([self.car.x, self.car.y]))
+            #     print('CLOSEST NODE: ', closest_node)
+            #     if closest_node == self.checkpoints[0]:
+            #         pass
+            #     elif closest_node in self.path_planner.route_graph.nodes:
+            #         self.start_node_validated = True
+            #     else:
+            #         langledeldiocane = np.round(np.rad2deg(
+            #             np.arctan2(self.car.y_est - self.curr_state.var1[1],
+            #                        self.car.x_est - self.curr_state.var1[0])))
+            #         self.checkpoints[self.checkpoint_idx] = hf.\
+            #             switch_lane_check(closest_node, langledeldiocane)
+            #         print("<++>")
 
             if self.conditions[nac.TRUST_GPS]:
                 dist_to_stopline = self.next_event.dist - self.car_dist_on_path
@@ -1273,7 +1276,9 @@ better aligned, alpha = {alpha}'
             # <++>
             if ALWAYS_DISTRUST_GPS:
                 self.curr_state.var3 = (AR_SWITCHING_LANE, True)
-                self.curr_state.var4 = True
+                # self.curr_state.var4 = True
+                self.curr_state.var4 = not self.checkpoints[
+                    self.checkpoint_idx] in RB_NODES_LEFT_INT
             elif self.conditions[nac.TRUST_GPS]:
                 curr_pos = np.array([self.car.x_est, self.car.y_est])
                 self.env.publish_obstacle(nac.ROADBLOCK, self.car.x_est,
@@ -1937,11 +1942,12 @@ error:{overshoot_distance:.2f}')
         if OBSTACLE_DISTANCE_THRESHOLD <= dist:  #
             print('Sonar got confused: switch back to previous state')
             self.switch_to_prev_state()
-        elif OBSTACLE_IMGS_CAPTURE_STOP_DISTANCE <= dist < \
-                OBSTACLE_DISTANCE_THRESHOLD:  # we are approaching the obstacle
-            print('Capturing imgs')
+        # elif OBSTACLE_IMGS_CAPTURE_STOP_DISTANCE <= dist < \
+        #         OBSTACLE_DISTANCE_THRESHOLD:  # we are approaching the obst
+        #     print('Capturing imgs')
         else:
-            if self.checkpoints[self.checkpoint_idx] == 134:
+            if (self.checkpoints[self.checkpoint_idx] in RB_NODES_LEFT_INT or
+               self.checkpoints[self.checkpoint_idx] in RB_NODES_RIGHT_INT):
                 obstacle = nac.ROADBLOCK
             elif (self.conditions[nac.BUMPY_ROAD] or
                     self.conditions[nac.HIGHWAY]):
