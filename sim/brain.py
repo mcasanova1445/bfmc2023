@@ -43,10 +43,10 @@ if not SPEED_CHALLENGE:
     CHECKPOINTS = [86, 430, 197, 112, 349, 113, 134, 146, END_NODE]  # THIS
     # CHECKPOINTS = [300, 349, 113, 134, 146, END_NODE]
     # CHECKPOINTS = [430, 197, 112, 349, 113, 134, 146, END_NODE]
-    CHECKPOINTS = [146, 108]
+    # CHECKPOINTS = [146, 108]
 else:
-    # CHECKPOINTS = [86, 430, 197, 123]  # THIS
-    CHECKPOINTS = [146, 123]
+    CHECKPOINTS = [86, 430, 197, 123]  # THIS
+    # CHECKPOINTS = [146, 123]
     # CHECKPOINTS = [146, 108]
 
 # CHECKPOINTS = [90, 430, 197, 112, 349, 113, 134, 145, END_NODE]  # La Tecnique
@@ -496,8 +496,6 @@ class Brain:
         sleep(3.0)
         while True:
             semaphore_start_state = self.env.get_semaphore_state(nac.START)
-            # <++>
-            break
             if SEMAPHORE_IS_ALWAYS_GREEN:
                 semaphore_start_state = nac.GREEN
             if semaphore_start_state == nac.GREEN:
@@ -1458,7 +1456,7 @@ expected parking spot position!')
                     self.curr_state.var1 = (nac.LOCALIZING_PARKING_SPOT,
                                             park_type, True)
                     self.parking_method = 'sign'
-                    raise KeyboardInterrupt
+                    # raise KeyboardInterrupt
                 print(f'Parking: GPS not trusted, \
 waiting for GPS to be trusted for {passed_time}/{PARK_MAX_SECONDS_W8_GPS} \
 [s]...')
