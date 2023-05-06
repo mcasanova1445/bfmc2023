@@ -33,7 +33,6 @@ STARTING_COORDS = [-42, -42]
 # STARTING_COORDS = [11.55, 3.55]  # Pre round - Half round
 # STARTING_COORDS = [11.55, 15 - 3.55]  # Pre round - Half round
 
-# STARTING_COORDS = [7.60, 15 - 3.93]  # Pre round - Full round
 
 END_NODE = 85
 
@@ -44,6 +43,7 @@ if not SPEED_CHALLENGE:
     # CHECKPOINTS = [300, 349, 113, 134, 146, END_NODE]
     # CHECKPOINTS = [430, 197, 112, 349, 113, 134, 146, END_NODE]
     # CHECKPOINTS = [146, 108]
+    # STARTING_COORDS = [11.55, 15 - 3.55]  # RAND START
 else:
     CHECKPOINTS = [86, 430, 197, 123]  # THIS
     # CHECKPOINTS = [146, 123]

@@ -5,6 +5,7 @@ import numpy as np
 import cv2 as cv
 import pickle
 import time
+from names_and_constants import SPEED_CHALLENGE
 
 
 def diff_angle(angle1, angle2):
@@ -498,10 +499,10 @@ def navigate_intersection(brain, show):
     elif brain.curr_state.var4 == "left":
         e3, _ = brain.detect.detect_intersection_left(brain.car.frame,
                                                       show_ROI=show)
-        if SPEED_CHALLENGE:
-            e3 = 1.02 * e3
-        else:
-            e3 = 0.95 * e3
+        e3 = 1.02 * e3
+        # if SPEED_CHALLENGE:
+        # else:
+        #     e3 = 0.95 * e3
     elif brain.curr_state.var4 == "forward":
         e3, _ = brain.detect.detect_intersection_forward(brain.car.frame,
                                                          show_ROI=show)
