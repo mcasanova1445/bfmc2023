@@ -40,6 +40,7 @@ END_NODE = 85
 
 if not SPEED_CHALLENGE:
     CHECKPOINTS = [86, 430, 197, 112, 349, 113, 134, 146, END_NODE]  # THIS
+    CHECKPOINTS = [139, 430, 197, 112, 349, 113, 134, 146, END_NODE]  # THIS
     # CHECKPOINTS = [300, 349, 113, 134, 146, END_NODE]
     # CHECKPOINTS = [430, 197, 112, 349, 113, 134, 146, END_NODE]
     # CHECKPOINTS = [146, 108]
@@ -557,6 +558,11 @@ Starting fro m the first checkpoint')
         #     # self.checkpoints[self.checkpoint_idx] = hf.switch_lane_check(
         #     #                                            closest_node, angle)
         #     print("<++>")
+
+        if self.checkpoints[0] in RB_NODES_RIGHT_INT:
+            self.checkpoints.insert(1, 146)
+        elif self.checkpoints[0] in RB_NODES_LEFT_INT:
+            self.checkpoints.insert(1, 145)
 
         self.switch_to_state(nac.START_STATE)
 
@@ -1308,9 +1314,9 @@ is too large, we are too far from the lane')
         elif substate == AR_SWITCHING_LANE:
             in_right_lane = self.curr_state.var4
             avoid_angle = AVOID_ROADBLOCK_ANGLE if in_right_lane \
-                else -AVOID_ROADBLOCK_DISTANCE
-            curr_check_new = 135 if in_right_lane \
-                else 140
+                else -AVOID_ROADBLOCK_ANGLE
+            curr_check_new = 140 if in_right_lane \
+                else 135
             next_check_new = 145 if in_right_lane \
                 else 146
             if just_switched_substate:
